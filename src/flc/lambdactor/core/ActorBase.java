@@ -16,14 +16,19 @@ package flc.lambdactor.core;
  * </p>
  * <pre>{@code
  * Minimum example:
- *     class MyClass extends ActorBase<MyClass> {
- *         public void receive(double value) {
- *             System.out.println("received value: " + value);
+ *     static void actorBaseExample(IGreenThrFactory factory)
+ *     {
+ *         class Impl extends ActorBase<Impl> {
+ *             void done(String message) {
+ *                 System.out.println(message + ": done!");
+ *             }
+ *             void receive(String message) {
+ *                 this.self().send(a -> a.done(message));
+ *             }
  *         }
+ *         IActorRef<Impl> ref = new Impl().init(factory);
+ *         ref.send(a -> a.receive("message"));
  *     }
- *     IGreenThrFactory threads = new GreenThr_zero();
- *     IActorRef<MyClass> ref = new MyClass().init(threads);
- *     ref.send(a -> a.receive(34));
  * }
  * </pre>
  * Date: 18.07.13

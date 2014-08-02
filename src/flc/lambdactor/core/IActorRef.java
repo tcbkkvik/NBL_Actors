@@ -16,14 +16,15 @@ import java.util.function.*;
  * </p>
  * <pre> Minimum example:
  * {@code
- *     public static void minimumExample(IGreenThrFactory factory) {
- *         class MyClass extends ActorBase<MyClass> {
- *             public void receive(double value) {
+ *     public static void minimumExample(IGreenThrFactory factory)
+ *     {
+ *         class PlainObj{
+ *             public void someMethod(double value) {
  *                 System.out.println("received value: " + value);
  *             }
  *         }
- *         IActorRef<MyClass> ref = new MyClass().init(factory);
- *         ref.send(a -> a.receive(34));
+ *         IActorRef<PlainObj> ref = new ActorRef<>(factory, new PlainObj());
+ *         ref.send(a -> a.someMethod(34));
  *     }
  * }
  * </pre>

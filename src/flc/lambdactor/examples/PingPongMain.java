@@ -39,19 +39,34 @@ public class PingPongMain extends ActorBase<PingPongMain> {
         else System.out.println("done");
     }
 
-    public static void minimumExample(IGreenThrFactory greenThrFactory) {
-        class MyClass extends ActorBase<MyClass> {
-            public void receive(double value) {
+    static void minimumExample(IGreenThrFactory factory) {
+        class PlainObj {
+            public void someMethod(double value) {
                 System.out.println("received value: " + value);
             }
         }
-        IActorRef<MyClass> ref = new MyClass().init(greenThrFactory);
-        ref.send(a -> a.receive(34));
+        IActorRef<PlainObj> ref = new ActorRef<>(factory, new PlainObj());
+        ref.send(a -> a.someMethod(34));
+    }
+
+    static void actorBaseExample(IGreenThrFactory factory) {
+        class Impl extends ActorBase<Impl> {
+            void done(String message) {
+                System.out.println(message + ": done!");
+            }
+
+            void receive(String message) {
+                this.self().send(i -> i.done(message));
+            }
+        }
+        IActorRef<Impl> ref = new Impl().init(factory);
+        ref.send(a -> a.receive("do it!"));
     }
 
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThr_single(false)) {
             minimumExample(f);
+            actorBaseExample(f);
             new PingPongMain()
                     .init(f)
                     .send(a -> a.ping(10));
