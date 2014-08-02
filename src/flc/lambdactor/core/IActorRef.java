@@ -14,29 +14,17 @@ import java.util.function.*;
  * Actor reference.
  * <p>Provide safe asynchronous access to actor implementation methods.
  * </p>
- * <pre> Example usage:
+ * <pre> Minimum example:
  * {@code
- * class Pong extends ActorBase<Pong> {
- *        void pong() {
- *            System.out.println("  pong");
- *        }
- *    }
- *    class Ping extends ActorBase<Ping> {
- *        int count;
- *        void ping(IActorRef<Pong> pongRef) {
- *            if (++count > 5) return;
- *            System.out.println("  ping " + count);
- *            pongRef.send(a -> {
- *                a.pong();
- *                self().execute(() -> ping(pongRef));
- *            });
- *        }
- *    }
- *    void startPingPong(IGreenThrFactory threads) {
- *        IActorRef<Pong> pongRef = new Pong().init(threads);
- *        IActorRef<Ping> pingRef = new Ping().init(threads);
- *        pingRef.send(a -> a.ping(pongRef));
- *    }
+ *     public static void minimumExample(IGreenThrFactory factory) {
+ *         class MyClass extends ActorBase<MyClass> {
+ *             public void receive(double value) {
+ *                 System.out.println("received value: " + value);
+ *             }
+ *         }
+ *         IActorRef<MyClass> ref = new MyClass().init(factory);
+ *         ref.send(a -> a.receive(34));
+ *     }
  * }
  * </pre>
  * Date: 02.08.13

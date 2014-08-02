@@ -39,8 +39,19 @@ public class PingPongMain extends ActorBase<PingPongMain> {
         else System.out.println("done");
     }
 
+    public static void minimumExample(IGreenThrFactory greenThrFactory) {
+        class MyClass extends ActorBase<MyClass> {
+            public void receive(double value) {
+                System.out.println("received value: " + value);
+            }
+        }
+        IActorRef<MyClass> ref = new MyClass().init(greenThrFactory);
+        ref.send(a -> a.receive(34));
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThr_single(false)) {
+            minimumExample(f);
             new PingPongMain()
                     .init(f)
                     .send(a -> a.ping(10));
