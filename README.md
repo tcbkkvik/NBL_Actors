@@ -5,7 +5,7 @@ A lightweight, easy to learn, flexible [Actor](http://en.wikipedia.org/wiki/Acto
 concurrency API  based on Java 8 lambdas.
 
 Minimum example;
-A plain java object wrapped in an actor reference (IActorRef)
+A plain java object wrapped in an actor reference (`IActorRef`)
 with a new thread implicitly given from a  green-thread factory.
 To protect against concurrent access, all methods of the object should then
 be called through the actor reference:
@@ -24,7 +24,7 @@ be called through the actor reference:
 ```
 
 Example;
-Access more actor functionality by inheriting from the 'ActorBase' base class:
+Access more actor functionality by inheriting from the `ActorBase` base class:
 ```java
     static void actorBaseExample(IGreenThrFactory factory) {
         class Impl extends ActorBase<Impl> {
