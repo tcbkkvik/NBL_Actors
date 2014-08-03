@@ -10,6 +10,7 @@ package flc.lambdactor.examples;
 import flc.lambdactor.core.*;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,6 +45,46 @@ public class ForkJoinExample {
         );
     }
 
+    static String[] splitLeftRight(String s) {
+        int pos = s.length() / 2;
+        return new String[]{s.substring(0, pos), s.substring(pos)};
+    }
+
+
+    // Fork/Join example:
+    // Recursively split a string into left/right until small enough (Fork phase),
+    // and then merge the strings back together (Join phase).
+    // (Forms a binary, concurrent and non-blocking computation tree)
+    static IASync<String> splitMerge(IGreenThrFactory tf, String string) {
+        if (string.length() < 6) return new ASyncDirect<>(string);
+        ForkJoin<String> fj = new ForkJoin<>("");
+        int count = 0;
+        for (String str : splitLeftRight(string)) {
+            final boolean isFirst = count++ == 0;
+            fj.callAsync(tf.newThread()
+                    , () -> splitMerge(tf, str)//split string
+                    , (val, ret) -> isFirst ? ret + val : val + ret
+                    //merge strings again (ForkJoin result updated)
+            );
+        }
+        return fj.resultAsync();
+    }
+
+    static void splitMergeDemo(IGreenThrFactory factory, String origString)
+            throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        log("Original string:\n " + origString);
+        factory.newThread().execute(
+                () -> splitMerge(factory, origString)
+                        .result(res -> {
+                            log("Resulting string:\n " + res);
+                            assert origString.equals(res);
+                            latch.countDown();
+                        })
+        );
+        latch.await();
+    }
+
     static void log(Object o) {
         System.out.println(o);
     }
@@ -54,8 +95,13 @@ public class ForkJoinExample {
 
     @SuppressWarnings({"UnusedDeclaration", "Convert2MethodRef"})
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-
+//        String[] arr = splitIn2("abc123");
+//        String[] arr2 = splitIn2("abc12");
+//        String[] arr3 = splitIn2("a");
+//        String[] arr4 = splitIn2("");
         try (IGreenThrFactory factory = new GreenThrFactory_single(4)) {
+            splitMergeDemo(factory,
+                    "This is a test-string. Lets see if it comes back the same..");
             final int depth = 3;
             final int facit = 1 << depth;
             log("forkJoin 2^" + depth);
