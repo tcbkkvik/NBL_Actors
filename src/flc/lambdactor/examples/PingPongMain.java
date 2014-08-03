@@ -51,16 +51,16 @@ public class PingPongMain extends ActorBase<PingPongMain> {
 
     static void actorBaseExample(IGreenThrFactory factory) {
         class Impl extends ActorBase<Impl> {
-            void done(String message) {
+            void otherMethod(String message) {
                 System.out.println(message + ": done!");
             }
 
-            void receive(String message) {
-                this.self().send(i -> i.done(message));
+            void someMethod(String message) {
+                this.self().send(a -> a.otherMethod(message));
             }
         }
         IActorRef<Impl> ref = new Impl().init(factory);
-        ref.send(a -> a.receive("do it!"));
+        ref.send(a -> a.someMethod("do it!"));
     }
 
     public static void main(String[] args) throws InterruptedException {
