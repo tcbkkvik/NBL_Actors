@@ -45,8 +45,13 @@ public class PingPongMain extends ActorBase<PingPongMain> {
                 System.out.println("received value: " + value);
             }
         }
-        IActorRef<PlainObj> ref = new ActorRef<>(factory, new PlainObj());
+        //Wrap 'PlainObj' in a new actor reference:
+        IActorRef<PlainObj> ref = new ActorRef<>(
+                factory,
+                new PlainObj());
+        //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod(34));
+        //PS. Avoid leaking shared-mutable-access via message passing.
     }
 
     static void actorBaseExample(IGreenThrFactory factory) {
@@ -59,7 +64,9 @@ public class PingPongMain extends ActorBase<PingPongMain> {
                 this.self().send(a -> a.otherMethod(message));
             }
         }
+        //call 'init' to initiate reference:
         IActorRef<Impl> ref = new Impl().init(factory);
+        //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod("do it!"));
     }
 

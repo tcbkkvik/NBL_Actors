@@ -4,11 +4,11 @@ Lambda-Actor
 A lightweight, easy to learn, flexible [Actor](http://en.wikipedia.org/wiki/Actor_model)
 concurrency API  based on Java 8 lambdas.
 
-Minimum example;
-A plain java object wrapped in an actor reference (`IActorRef`)
-with a new thread implicitly given from a  green-thread factory.
-To protect against concurrent access, all methods of the object should then
-be called through the actor reference:
+## Actors from plain Java objects
+Wrapping an object inside an actor reference (`IActorRef`),
+protects it against concurrent access, as long as all calls from
+other threads or actors goes through this reference.
+Example:
 ```java
     static void minimumExample(IGreenThrFactory factory) {
         class PlainObj {
@@ -16,34 +16,40 @@ be called through the actor reference:
                 System.out.println("received value: " + value);
             }
         }
-        //Wrap object in an actor reference:
-        IActorRef<PlainObj> ref = new ActorRef<>(factory, new PlainObj());
+        //Wrap 'PlainObj' in a new actor reference:
+        IActorRef<PlainObj> ref = new ActorRef<>(
+                factory,
+                new PlainObj());
         //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod(34));
+        //PS. Avoid leaking shared-mutable-access via message passing.
     }
 ```
 
-Example using `ActorBase`;
-Access more actor functionality by inheriting from the `ActorBase` base class:
+## Actor base class
+Get access to more actor functionality by extending from class `ActorBase`.
+Example - Actor sends to itself using `ActorBase.self`:
 ```java
     static void actorBaseExample(IGreenThrFactory factory) {
         class Impl extends ActorBase<Impl> {
-            void done(String message) {
+            void otherMethod(String message) {
                 System.out.println(message + ": done!");
             }
 
-            void receive(String message) {
-                this.self().send(i -> i.done(message));
+            void someMethod(String message) {
+                this.self().send(a -> a.otherMethod(message));
             }
         }
         //call 'init' to initiate reference:
         IActorRef<Impl> ref = new Impl().init(factory);
         //send a message = asynchronous method call (lambda expression):
-        ref.send(a -> a.receive("do it!"));
+        ref.send(a -> a.someMethod("do it!"));
     }
 ```
 
-Become example; change behaviour (implementation) at runtime:
+## Become - runtime behaviour change
+Change behaviour by calling `ActorBase.become`;
+Example:
 ```java
     static class BecomeDemo extends ActorBase<BecomeDemo> {
         public void gotMessage() {
@@ -60,10 +66,49 @@ Become example; change behaviour (implementation) at runtime:
     }
 ```
 
-Non-blocking Fork/Join example:
+## Non-blocking 'futures'
+Wait for future responses without blocking.
+Example - Return an asynchronous value via `IASync`:
+```java
+    static void nonBlockingFuture(IGreenThr thr) {
+
+        class ValueActor {
+            final ASyncValue<Integer> async = new ASyncValue<>();
+            IASync<Integer> getAsync() {
+                return async;
+            }
+        }
+
+        class MainActor {
+            int gotValue;
+            void someCalls(int correct, IActorRef<ValueActor> ref) {
+                ref
+                        .call(a -> a.getAsync())
+                        .result(ret -> { //In MainActor thread:
+                            gotValue = ret;
+                            log(" correct value: " + correct);
+                            log("returned value: " + ret);
+                            assert ret == correct;
+                        });
+                ref.send(valueActor
+                        -> valueActor.async.accept(correct));
+            }
+        }
+        IActorRef<ValueActor> valRef = new ActorRef<>(new ValueActor(), thr);
+        IActorRef<MainActor> mainRef = new ActorRef<>(new MainActor(), thr);
+        mainRef.send(a -> a.someCalls(31407, valRef));
+        // Output:
+        // correct value: 31407
+        // returned value: 31407
+    }
+```
+
+
+## Non-blocking Fork/Join
+Example;
 Recursively split a string into left/right until small enough (Fork),
 and then merge the strings back together (Join).
-Future result string should be equal to original.
+The final merged string should be equal to original:
 ```java
     static IASync<String> splitMerge(IGreenThrFactory tf, String original) {
         if (original.length() < 6) return new ASyncDirect<>(original);

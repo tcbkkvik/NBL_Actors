@@ -61,21 +61,21 @@ public class ASyncMain {
     @SuppressWarnings("CodeBlock2Expr")
     static void tstParallelSum() throws InterruptedException {
         final List<Integer> numbers = Utils.randomIntegers(10);
-        final int val_facit = sumArr(numbers);
+        final int val_orig = sumArr(numbers);
         try (GreenThrFactory_single threads = new GreenThrFactory_single(4)) {
             threads.reverseOrder(true);
             IActorRef<ParallelSum> ref = new ParallelSum().init(threads);
-            log(" Parallel sum, facit: " + val_facit);
+            log(" Parallel sum, correct: " + val_orig);
             ref.send(s ->
                     s.sum2(numbers).result(v -> {
                         log(" Parallel sum, non-static version: " + v);
-//                assert val_facit == v;
+//                assert val_orig == v;
                     })
             );
             threads.newThread().execute(() ->
                     ParallelSum.sum(numbers).result(v -> {
                         log(" Parallel sum, static fork/join  : " + v);
-//                assert val_facit == v;
+//                assert val_orig == v;
                     })
             );
         }
@@ -111,7 +111,45 @@ public class ASyncMain {
         future.result(s -> log("  got2: " + s));
     }
 
+    @SuppressWarnings("Convert2MethodRef")
+    static void nonBlockingFuture(IGreenThr thr) {
+
+        class ValueActor {
+            final ASyncValue<Integer> async = new ASyncValue<>();
+
+            IASync<Integer> getAsync() {
+                return async;
+            }
+        }
+
+        class MainActor {
+            int gotValue;
+
+            void someCalls(int correct, IActorRef<ValueActor> ref) {
+                ref
+                        .call(a -> a.getAsync())
+                        .result(ret -> { //In MainActor thread:
+                            gotValue = ret;
+                            log(" correct value: " + correct);
+                            log("returned value: " + ret);
+                            assert ret == correct;
+                        });
+                ref.send(valueActor
+                        -> valueActor.async.accept(correct));
+            }
+        }
+        IActorRef<ValueActor> valRef = new ActorRef<>(new ValueActor(), thr);
+        IActorRef<MainActor> mainRef = new ActorRef<>(new MainActor(), thr);
+        mainRef.send(a -> a.someCalls(31407, valRef));
+        // Output:
+        // correct value: 31407
+        // returned value: 31407
+    }
+
     public static void main(String[] args) throws InterruptedException {
+        try (IGreenThrFactory f = new GreenThr_zero()) {
+            nonBlockingFuture(f.newThread());
+        }
         asyncConcept("test string");
         tstParallelSum();
         tstFJ();
