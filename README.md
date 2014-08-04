@@ -47,7 +47,7 @@ Example - Actor sends to itself using `ActorBase.self`:
     }
 ```
 
-## Become - runtime behaviour change
+## Become - change runtime behaviour
 Change behaviour by calling `ActorBase.become`;
 Example:
 ```java

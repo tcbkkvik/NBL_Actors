@@ -112,6 +112,9 @@ public interface IGreenThrFactory extends Closeable {
      * , including actors using this factory, or the method can deadlock.
      * Before or while calling, be sure that {@link #shutdown()}
      * or {@link #shutdownNow()} is called.
+     * <p>(Typically implemented by calling java.lang.Thread.join()
+     * or java.util.concurrent.ExecutorService.awaitTermination())
+     * </p>
      *
      * @param millis the time to wait in milliseconds
      * @throws IllegalArgumentException if the value of {@code millis} is negative

@@ -12,12 +12,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+//Run with java 8
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+//Ok with junit-4.10.jar
 
 
 /**
@@ -212,6 +214,7 @@ public class ActorTests {
         }
         if (!isShutdownCalled.get()) {
             fail("isShutdownCalled = false");
+            //todo factory fix??
         }
         assertEquals(N, responseCount.get());
         log("    OK: testActorRef");
