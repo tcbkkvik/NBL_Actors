@@ -43,38 +43,40 @@ Access more actor functionality by inheriting from the `ActorBase` base class:
     }
 ```
 
-Example using `ForkJoin`;
-Recursively split a string into left/right until small enough (Fork),
-and then merge the strings back together (Join):
-(Forms a binary, concurrent and non-blocking computation tree)
+Become example; change behaviour (implementation) at runtime:
 ```java
-    static IASync<String> splitMerge(IGreenThrFactory tf, String string) {
-        if (string.length() < 6) return new ASyncDirect<>(string);
+    static class BecomeDemo extends ActorBase<BecomeDemo> {
+        public void gotMessage() {
+            System.out.println(" I am the original actor");
+            final BecomeDemo original = this;
+            become(new BecomeDemo() {
+                @Override
+                public void gotMessage() {
+                    System.out.println(" I am a second implementation");
+                    become(original);
+                }
+            });
+        }
+    }
+```
+
+Non-blocking Fork/Join example:
+Recursively split a string into left/right until small enough (Fork),
+and then merge the strings back together (Join).
+Future result string should be equal to original.
+```java
+    static IASync<String> splitMerge(IGreenThrFactory tf, String original) {
+        if (original.length() < 6) return new ASyncDirect<>(original);
         ForkJoin<String> fj = new ForkJoin<>("");
         int count = 0;
-        for (String str : splitLeftRight(string)) {
-            final boolean isFirst = count++ == 0;
+        for (String str : splitLeftRight(original)) {
+            final boolean isLeft = count++ == 0;
             fj.callAsync(tf.newThread()
-                    , () -> splitMerge(tf, str)//split string
-                    , (val, ret) -> isFirst ? ret + val : val + ret
+                    , () -> splitMerge(tf, str)
+                    , (val, ret) -> isLeft ? ret + val : val + ret
                     //merge strings again (ForkJoin result updated)
             );
         }
         return fj.resultAsync();
-    }
-
-    static void splitMergeDemo(IGreenThrFactory factory, String origString)
-            throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        log("Original string:\n " + origString);
-        factory.newThread().execute(
-                () -> splitMerge(factory, origString)
-                        .result(res -> {
-                            log("Resulting string:\n " + res);
-                            assert origString.equals(res);
-                            latch.countDown();
-                        })
-        );
-        latch.await();
     }
 ```

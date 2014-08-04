@@ -18,17 +18,14 @@ public class BecomeMain {
     /**
      * An actor demonstrating {@link #become(Object)}
      */
-    public static class Actor extends ActorBase<Actor> {
-        /**
-         * Self modifying method; calls {@link #become(Object)}.
-         */
-        public void tell() {
-            System.out.println(" become(A)  => IActorRef -> object A ");
-            final Actor original = this;
-            become(new Actor() {
+    static class BecomeDemo extends ActorBase<BecomeDemo> {
+        public void gotMessage() {
+            System.out.println(" I am the original actor");
+            final BecomeDemo original = this;
+            become(new BecomeDemo() {
                 @Override
-                public void tell() {
-                    System.out.println("  become(B) => IActorRef -> object B ");
+                public void gotMessage() {
+                    System.out.println(" I am a second implementation");
                     become(original);
                 }
             });
@@ -36,12 +33,10 @@ public class BecomeMain {
     }
 
     public static void main(String[] args) {
-        try (IGreenThrFactory f = new GreenThr_zero()) {
-            IActorRef<Actor> ref = new Actor().init(f);
-            ref.send(Actor::tell);
-            ref.send(Actor::tell);
-            ref.send(Actor::tell);
-        }
+        IActorRef<BecomeDemo> ref = new BecomeDemo().initThread(Runnable::run);
+        ref.send(BecomeDemo::gotMessage);
+        ref.send(BecomeDemo::gotMessage);
+        ref.send(BecomeDemo::gotMessage);
     }
 
 }

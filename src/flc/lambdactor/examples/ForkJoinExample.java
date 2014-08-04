@@ -51,19 +51,19 @@ public class ForkJoinExample {
     }
 
 
-    // Fork/Join example:
-    // Recursively split a string into left/right until small enough (Fork phase),
-    // and then merge the strings back together (Join phase).
-    // (Forms a binary, concurrent and non-blocking computation tree)
-    static IASync<String> splitMerge(IGreenThrFactory tf, String string) {
-        if (string.length() < 6) return new ASyncDirect<>(string);
+    // Non-blocking Fork/Join example:
+    // Recursively split a string into left/right until small enough (Fork),
+    // and then merge the strings back together (Join).
+    // Future result string should be equal to original.
+    static IASync<String> splitMerge(IGreenThrFactory tf, String original) {
+        if (original.length() < 6) return new ASyncDirect<>(original);
         ForkJoin<String> fj = new ForkJoin<>("");
         int count = 0;
-        for (String str : splitLeftRight(string)) {
-            final boolean isFirst = count++ == 0;
+        for (String str : splitLeftRight(original)) {
+            final boolean isLeft = count++ == 0;
             fj.callAsync(tf.newThread()
-                    , () -> splitMerge(tf, str)//split string
-                    , (val, ret) -> isFirst ? ret + val : val + ret
+                    , () -> splitMerge(tf, str)
+                    , (val, ret) -> isLeft ? ret + val : val + ret
                     //merge strings again (ForkJoin result updated)
             );
         }
@@ -103,14 +103,14 @@ public class ForkJoinExample {
             splitMergeDemo(factory,
                     "This is a test-string. Lets see if it comes back the same..");
             final int depth = 3;
-            final int facit = 1 << depth;
+            final int correct = 1 << depth;
             log("forkJoin 2^" + depth);
             AtomicInteger ai = new AtomicInteger(0);
             CompletableFuture<Integer> future = new CompletableFuture<>();
             factory.newThread().execute(
                     () -> traverse(factory, depth)
                             .result(sum -> {
-                                boolean ok = sum == facit;
+                                boolean ok = sum == correct;
                                 log("    = " + sum + "   ok:" + ok);
                                 future.complete(sum);
                                 ai.set(sum);
@@ -118,8 +118,8 @@ public class ForkJoinExample {
             );
             int sum = future.get();
             int sum2 = ai.get();
-            assert facit == sum;
-            assert facit == sum2;
+            assert correct == sum;
+            assert correct == sum2;
         }
     }
 
