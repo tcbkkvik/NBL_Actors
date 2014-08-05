@@ -4,7 +4,9 @@ Lambda-Actor
 A lightweight, easy to learn, flexible [Actor](http://en.wikipedia.org/wiki/Actor_model)
 concurrency API  based on Java 8 lambdas.
 
-## Actors from plain Java objects
+## Usage
+
+### Actors from plain Java objects
 Wrapping an object inside an actor reference (`IActorRef`),
 protects it against concurrent access, as long as all calls from
 other threads or actors goes through this reference.
@@ -26,7 +28,7 @@ Example:
     }
 ```
 
-## Actor base class
+### Actor base class
 Get access to more actor functionality by extending from class `ActorBase`.
 Example - Actor sends to itself using `ActorBase.self`:
 ```java
@@ -47,7 +49,7 @@ Example - Actor sends to itself using `ActorBase.self`:
     }
 ```
 
-## Become - change runtime behaviour
+### Become - change runtime behaviour
 Change behaviour by calling `ActorBase.become`;
 Example:
 ```java
@@ -66,7 +68,7 @@ Example:
     }
 ```
 
-## Non-blocking 'futures'
+### Non-blocking 'futures'
 Wait for future responses without blocking.
 Example - Return an asynchronous value via `IASync`:
 ```java
@@ -104,9 +106,9 @@ Example - Return an asynchronous value via `IASync`:
 ```
 
 
-## Non-blocking Fork/Join
+### Non-blocking Fork/Join
 Example;
-Recursively split a string into left/right until small enough (Fork),
+Recursively split a string to left/right halves until small enough (Fork),
 and then merge the strings back together (Join).
 The final merged string should be equal to original:
 ```java

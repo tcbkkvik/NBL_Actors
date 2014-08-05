@@ -135,7 +135,7 @@ public class ForkJoin<R> {
     }
 
     /**
-     * Call thread with Runnable's
+     * Call thread with Runnable
      *
      * @param toThread target thread
      * @param call     action at target thread
@@ -212,7 +212,7 @@ public class ForkJoin<R> {
     }
 
     /**
-     * Call actor with Runnable's
+     * Call actor with Runnable
      *
      * @param toRef target actor
      * @param call  action at target
