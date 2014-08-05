@@ -15,23 +15,25 @@ import java.util.function.*;
  * <pre>
  * Example:
  * {@code
- * Recursive concurrent binary tree traversal.
- *    Returns future number of leaf nodes (2^depth).
- *
- *  static IASync<Integer> traverse(IGreenThrFactory tf, int depth)
- *  {
- *     if (depth < 1)
- *         return new ASyncDirect<>(1); //1 leaf node
- *     ForkJoin<Integer> fj = new ForkJoin<>(0);
- *     for (int i = 0; i < 2; ++i) { //left + right child
- *         fj.callAsync(tf.newThread(),
- *                 () -> traverse(tf, depth - 1),
- *                 (value, returned) -> value + returned
- *         );
+ *     // Non-blocking Fork/Join:
+ *     // Recursively split a string to left/right halves until small enough (Fork),
+ *     // and then merge the strings back together (Join).
+ *     // Future result string should be equal to original.
+ *     static IASync<String> splitMerge(IGreenThrFactory tf, String original) {
+ *         if (original.length() < 6) return new ASyncDirect<>(original);
+ *         ForkJoin<String> fj = new ForkJoin<>("");
+ *         int count = 0;
+ *         for (String str : splitLeftRight(original)) {
+ *             final boolean isLeft = count++ == 0;
+ *             fj.callAsync(tf.newThread()
+ *                     , () -> splitMerge(tf, str)
+ *                     , (val, ret) -> isLeft ? ret + val : val + ret
+ *                     //merge strings again (ForkJoin result updated)
+ *             );
+ *         }
+ *         return fj.resultAsync();
  *     }
- *     return fj.resultAsync();
- *  }
- * }
+ *  * }
  * </pre>
  * Date: 20.07.14
  *

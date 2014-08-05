@@ -52,7 +52,7 @@ public class ForkJoinExample {
 
 
     // Non-blocking Fork/Join example:
-    // Recursively split a string into left/right until small enough (Fork),
+    // Recursively split a string to left/right halves until small enough (Fork),
     // and then merge the strings back together (Join).
     // Future result string should be equal to original.
     static IASync<String> splitMerge(IGreenThrFactory tf, String original) {
