@@ -33,7 +33,7 @@ import java.util.function.*;
  * @param <A> Actor implementation type (class)
  * @author Tor C Bekkvik
  */
-public interface IActorRef<A> extends IGreenThr {
+public interface IActorRef<A> {
 
     /**
      * Send message to this actor
@@ -79,16 +79,6 @@ public interface IActorRef<A> extends IGreenThr {
                 )
         ));
         return c;
-    }
-
-    /**
-     * Send runnable message. Execute runnable on this actor's thread.
-     *
-     * @param msg message
-     */
-    @Override
-    default void execute(final Runnable msg) {
-        send(ai -> msg.run());
     }
 
 }

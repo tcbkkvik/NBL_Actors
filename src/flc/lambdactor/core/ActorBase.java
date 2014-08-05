@@ -105,7 +105,9 @@ public class ActorBase<T> {
      * @return initiated ForkJoin
      */
     public <R> ForkJoin<R> newForkJoin(R initValue) {
-        return new ForkJoin<>(self(), initValue);
+        return new ForkJoin<>(
+                msg -> self_reference.send(a -> msg.run()),
+                initValue);
     }
 
     /**
