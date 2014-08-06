@@ -36,14 +36,12 @@ public interface IGreenThr extends Executor {
     @Override
     void execute(Runnable msg);
 
-    //Stateless calls ..
-
     /**
      * Call: Send message with callback function to handle result.
      *
      * @param msg      message
      * @param callback result handler
-     * @param <T>      return types
+     * @param <T>      return type
      */
     default <T> void call(final Supplier<T> msg, final Consumer<T> callback) {
         IGreenThr caller = ThreadContext.get().getThread();

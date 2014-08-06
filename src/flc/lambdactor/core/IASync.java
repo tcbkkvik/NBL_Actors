@@ -34,12 +34,4 @@ public interface IASync<T> {
      * @param consumer result callback
      */
     void result(Consumer<T> consumer);
-
-//    default Future<T> toFuture() {
-//        java.util.concurrent.CompletableFuture<T>
-//              fut = new java.util.concurrent.CompletableFuture<>();
-//        result(fut::complete); //be able to cancel??
-//        return fut;
-//    }
-
 }
