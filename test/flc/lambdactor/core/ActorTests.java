@@ -214,7 +214,7 @@ public class ActorTests {
         }
         if (!isShutdownCalled.get()) {
             fail("isShutdownCalled = false");
-            //todo factory fix??
+            //todo GreenThrFactory_single fix?
         }
         assertEquals(N, responseCount.get());
         log("    OK: testActorRef");

@@ -127,3 +127,42 @@ The final merged string should be equal to original:
         return fj.resultAsync();
     }
 ```
+
+## Misc
+
+### Adding functionality
+This library is small, with a simple focus on core Actor features,
+but it is intended for combination with other useful libraries etc.
+for instance with java.util.concurrent.atomic.*.
+Example;
+Adding Cancel functionality with `AtomicBoolean`:
+```java
+        final AtomicBoolean isCancel = new AtomicBoolean(false);
+        ref.send(a -> {
+            if (!isCancel.get())
+                a.doWork();
+        });
+        //..might be called later:
+        isCancel.set(true);
+```
+
+### Flow control
+Message-queue overflow can in general be avoided by
+returning feedback-messages to sending actor.
+The sender can then slow down by:
+    - Blocking until consuming actor is ready. (best to avoid?)
+    - Rejecting received message. (vital messages lost?)
+    - Message-pulling instead of passive receive.
+Example:
+```java
+        //User defined method inside actor:
+        public void pullNextMessage() {
+            Integer val = pullSource.get();
+            if (val == null) return; //stop
+            destination.send(d -> {
+                d.consume(val);
+                // Feedback "loop" here:
+                self().send(s -> s.pullNextMessage());
+            });
+        }
+```
