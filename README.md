@@ -150,9 +150,13 @@ Adding Cancel functionality with `AtomicBoolean`:
 Message-queue overflow can in general be avoided by
 returning feedback-messages to sending actor.
 The sender can then slow down by:
+
     - Blocking until consuming actor is ready. (best to avoid?)
+    
     - Rejecting received message. (vital messages lost?)
+    
     - Message-pulling instead of passive receive.
+    
 Example:
 ```java
         //User defined method inside actor:
