@@ -22,6 +22,7 @@ becomes an actor. This object should not be referred directly (except from this 
 Her is a mini-tutorial, covering all essential concepts (as working code):
 ```java
     static void easy_to_learn(IGreenThrFactory factory) {
+        //PS. Must run inside an instance of 'IGreenThr'
         /* 1. Extend your class (A) from ActorBase: */
         class A extends ActorBase<A> {
             int x;
