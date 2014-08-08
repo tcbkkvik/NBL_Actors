@@ -31,7 +31,7 @@ public class ThreadContext {
     private ThreadContext() {
     }
 
-    static String shortTrace(Exception e) {
+    public static String shortTrace(Exception e) {
         String msg = "  :" + e.getClass().getSimpleName() + "(" + e.getMessage() + ")";
         StackTraceElement[] st = e.getStackTrace();
         return (st == null || st.length == 0)

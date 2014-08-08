@@ -9,6 +9,7 @@ package flc.lambdactor.examples;
 
 import flc.lambdactor.core.*;
 
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,6 +44,15 @@ public class PingPongMain extends ActorBase<PingPongMain> {
             self().send(a -> a.ping(no - 1));
         else System.out.println("done");
     }
+
+
+
+
+
+
+    /*
+      Other examples, (not related to ping - pong demo above..)
+     */
 
     static void minimumExample(IGreenThrFactory factory) {
         log("minimumExample..");
@@ -89,7 +99,7 @@ public class PingPongMain extends ActorBase<PingPongMain> {
                 log("  ..doWork called");
             }
         }
-        CountDownLatch latch = new CountDownLatch(2);
+//        CountDownLatch latch = new CountDownLatch(2);
         IActorRef<Act> ref = new Act().init(factory);
 //        This library is small, with a simple focus on core Actor features,
 //                but it is intended for combination with other useful libraries etc.
@@ -107,11 +117,12 @@ public class PingPongMain extends ActorBase<PingPongMain> {
         //..might be called later.. :
         isCancel.set(true);
         // -----------------------------------------------
+        //noinspection CodeBlock2Expr
         ref.send(a -> {
             log(" final send -> isCancel = " + isCancel.get());
-            latch.countDown();
+//            latch.countDown();
         });
-        latch.await();
+//        latch.await();
     }
 
     @SuppressWarnings("Convert2MethodRef")
@@ -143,19 +154,19 @@ public class PingPongMain extends ActorBase<PingPongMain> {
             if (val == null) return; //stop
             destination.send(d -> {
                 d.consume(val);
-                // Feedback "loop" here:
+                // Feedback "loop" here: (ACK signal)
                 self().send(s -> s.pullNextMessage());
             });
         }
 
-        static void demo(IGreenThrFactory factory)
+        static void demo(IGreenThrFactory factory, int max)
                 throws InterruptedException {
             log("Throttle..");
             IActorRef<ReceiveActor> out = new ActorRef<>(factory, new ReceiveActor());
             final AtomicInteger count = new AtomicInteger();
             Supplier<Integer> in = () -> {
                 int no = count.incrementAndGet();
-                return (Integer) (no < 50 ? no : null);
+                return (Integer) (no < max ? no : null);
             };
             IActorRef<Throttle> ref = new Throttle(in, out).init(factory);
             ref.send(s -> {
@@ -170,16 +181,84 @@ public class PingPongMain extends ActorBase<PingPongMain> {
         }
     }
 
+    static class CallChain {
+        class A extends ActorBase<A> {
+            final int id;
+
+            A(int id) {
+                this.id = id;
+            }
+
+            void gotIt() {
+                log(" actor " + id);
+            }
+        }
+
+        static void recursive_call_chain(Iterator<IActorRef<A>> actorIt) {
+            if (actorIt.hasNext())
+                actorIt.next()
+                        .send(a -> {
+                            a.gotIt();
+                            //Got message! now try next actor in chain:
+                            recursive_call_chain(actorIt);
+                        });
+            else
+                log("end of call-chain!");
+        }
+
+        void demo(IGreenThrFactory f) {
+            log("chained_messages..");
+            final List<IActorRef<A>> actors = new ArrayList<>();
+            for (A a : new A[]{new A(0), new A(1), new A(2)})
+                actors.add(a.init(f));
+            recursive_call_chain(actors.iterator());
+        }
+
+    }
+
+    @SuppressWarnings("Convert2MethodRef")
+    static class LeakedState extends ActorBase<LeakedState> {
+        int value;
+
+        //Avoid leaking state via messages..
+        void WRONG_copyFrom(IActorRef<LeakedState> ref) {
+            ref.send(a -> {
+                value = a.value;
+                //Probably in another thread, leading
+                //to shared mutable access - DON'T do this!
+                //Never access local mutable fields from here!
+            });
+        }
+
+        void correct_copyFrom(IActorRef<LeakedState> other) {
+            other.call(a -> a.value //another thread
+                    , result -> value = result //..back to my thread
+            );
+        }
+
+        @SuppressWarnings("UnusedDeclaration")
+        static void run(IGreenThrFactory f) {
+            final IActorRef<LeakedState> ref = new LeakedState().init(f);
+            new LeakedState()
+                    .init(f)
+                    .send(a -> {
+                        a.WRONG_copyFrom(ref);
+                        a.correct_copyFrom(ref);
+                    });
+        }
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThr_single(false)) {
-            Throttle.demo(f);
+            new CallChain().demo(f);
+            Throttle.demo(f, 7);
             cancelOp(f);
             minimumExample(f);
             actorBaseExample(f);
             log("PingPongMain..");
             new PingPongMain()
                     .init(f)
-                    .send(a -> a.ping(10));
+                    .send(a -> a.ping(3));
         }
     }
 }

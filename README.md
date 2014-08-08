@@ -1,15 +1,68 @@
 Lambda-Actor
 ============
 
-A lightweight, easy to learn, flexible [Actor](http://en.wikipedia.org/wiki/Actor_model)
-concurrency API  based on Java 8 lambdas.
+A lightweight, easy to learn, flexible, typed-[actor](http://en.wikipedia.org/wiki/Actor_model)
+concurrency API, based on lambdas (Java 8).
 
-## Usage
+An actor can be seen as an extension of the Object-Oriented (OO) model:
+While the OO-model is good at protecting private fields and methods, its default
+multi-threading synchronization is often hard to get right.
+In contrast, an actor object has built-in concurrency protection with its message based concurrency.
+
+Taking full advantage of lambdas from beginning, this API is a compact yet flexible implementation
+of the actor-model. Redundant concepts and code has continuously been trimmed away
+, intended to achieve a high "power-to-weight" ratio (Ie. few concepts, but simple to combine).
+
+## Easy to learn
+Basically, an object of a type 'A', wrapped inside an actor reference (`IActorRef<A>`),
+becomes an actor. This object should not be referred directly (except from this actor itself)
+, but by sending it messages through its actor reference.
+
+
+Her is a mini-tutorial, covering all essential concepts (as working code):
+```java
+    static void easy_to_learn(IGreenThrFactory factory) {
+        /* 1. Extend your class (A) from ActorBase: */
+        class A extends ActorBase<A> {
+            int x;
+            void increaseX() {++x;}
+            int getX() {return x;}
+        }
+
+        /* 2. Create a new instance (a) of A in an actor reference.
+           The 'init' call binds (a) with a lightweight thread (green-thread)
+           to queue and process its received messages: */
+        IActorRef<A> refA = new A()
+                .init(factory); //init: binds (a) with a new thread.
+
+        /* 3. Send it messages
+            3.1) Send = Basic one-way messaging: */
+        refA.send(a -> a.increaseX());
+        refA.send(A::increaseX); //same effect
+
+        /*  3.2) Call = Messages with callback: */
+        refA.call(
+                A::getX
+                // getX is called from the thread of refA
+
+                , x -> System.out.println(" got x: " + x)
+                // callback; called at my own thread
+        );
+    }
+```
+..Ready to try yourself?
+
+## Usage patterns
 
 ### Actors from plain Java objects
 Wrapping an object inside an actor reference (`IActorRef`),
 protects it against concurrent access, as long as all calls from
 other threads or actors goes through this reference.
+
+Although its best to extend from `ActorBase` to make clear that
+the methods should no be called directly from other threads
+, it is possible to transform a plain java object into an actor..
+
 Example:
 ```java
     static void minimumExample(IGreenThrFactory factory) {
@@ -20,7 +73,7 @@ Example:
         }
         //Wrap 'PlainObj' in a new actor reference:
         IActorRef<PlainObj> ref = new ActorRef<>(
-                factory,
+                factory,  //factory; gives a lightweight thread to the actor
                 new PlainObj());
         //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod(34));
@@ -47,6 +100,42 @@ Example - Actor sends to itself using `ActorBase.self`:
         //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod("do it!"));
     }
+```
+
+### Protect mutable state
+Never access local mutable fields from lambda blocks running in other threads.
+Example:
+```java
+    static class LeakedState extends ActorBase<LeakedState> {
+        int value;
+
+        //Avoid leaking state via messages..
+        void WRONG_copyFrom(IActorRef<LeakedState> ref) {
+            ref.send(a -> {
+                value = a.value;
+                //Probably in another thread, leading
+                //to shared mutable access - DON'T do this!
+                //Never access local mutable fields from here!
+            });
+        }
+
+        void correct_copyFrom(IActorRef<LeakedState> other) {
+            other.call(a -> a.value //another thread
+                    , result -> value = result //..back to my thread
+            );
+        }
+
+        static void run(IGreenThrFactory f) {
+            final IActorRef<LeakedState> ref = new LeakedState().init(f);
+            new LeakedState()
+                    .init(f)
+                    .send(a -> {
+                        a.WRONG_copyFrom(ref);
+                        a.correct_copyFrom(ref);
+                    });
+        }
+    }
+
 ```
 
 ### Become - change runtime behaviour
@@ -107,6 +196,11 @@ Example - Return an asynchronous value via `IASync`:
 
 
 ### Non-blocking Fork/Join
+The `ForkJoin` utility class gives you fully generic, non-blocking Fork/Join.
+Each call to `ForkJoin.call` or `ForkJoin.callAsync` forks a new concurrent child node (=computation),
+which is free to start other types of computation (heterogeneous).
+It can also be recursive.
+
 Example;
 Recursively split a string to left/right halves until small enough (Fork),
 and then merge the strings back together (Join).
@@ -127,8 +221,6 @@ The final merged string should be equal to original:
         return fj.resultAsync();
     }
 ```
-
-## Misc
 
 ### Adding functionality
 This library is small, with a simple focus on core Actor features,
@@ -151,11 +243,10 @@ Message-queue overflow can in general be avoided by
 returning feedback-messages to sending actor.
 The sender can then slow down by:
 
-    - Blocking until consuming actor is ready. (best to avoid?)
-    
-    - Rejecting received message. (vital messages lost?)
-    
-    - Message-pulling instead of passive receive.
+    1. Blocking until consuming actor is ready. (best to avoid?)
+    2. Instead of blocking, thread could alternatively help receiving actor (if not already active)
+    3. Rejecting received message. (vital messages lost?)
+    4. Message-pulling instead of passive receive.
     
 Example:
 ```java
@@ -170,3 +261,32 @@ Example:
             });
         }
 ```
+
+### Dynamic messaging
+Messages as lambda expressions (continuations) are powerful,
+since they carry algorithmic expressions, executed on receiver's behalf.
+This gives you a lot of flexibility..
+
+Example; Passing a message through a chain of actors:
+```java
+        static void recursive_call_chain(Iterator<IActorRef<A>> actorIt) {
+            if (actorIt.hasNext())
+                actorIt.next()
+                        .send(a -> {
+                            a.gotIt();
+                            //Got message! now try next actor in chain:
+                            recursive_call_chain(actorIt);
+                        });
+            else
+                log("end of call-chain!");
+        }
+```
+
+### Distributed computing?
+Messaging over a network is not implemented, but could become an option by
+serializing `IActorRef.send(java.util.function.Consumer<A> msg)`..
+
+
+## More documentation..
+* For more examples & other source code: Check under src/flc/lambdactor/...
+* Java docs; Download as ZIP file; check under the doc/ folder.

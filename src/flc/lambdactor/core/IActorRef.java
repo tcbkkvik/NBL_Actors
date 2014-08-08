@@ -12,7 +12,7 @@ import java.util.function.*;
 
 /**
  * Actor reference.
- * <p>Provide safe asynchronous access to actor implementation methods.
+ * <p>Provides safe asynchronous access to actor implementation methods.
  * </p>
  * <pre> Minimum example:
  * {@code
@@ -30,7 +30,9 @@ import java.util.function.*;
  * </pre>
  * Date: 02.08.13
  *
- * @param <A> Actor implementation type (class)
+ * @param <A> The type of user object (actor implementation) held
+ *           and protected by this actor reference.
+ *
  * @author Tor C Bekkvik
  */
 public interface IActorRef<A> {
@@ -62,7 +64,7 @@ public interface IActorRef<A> {
     }
 
     /**
-     * Call: Send message, returning asynchronous result
+     * Call: Send a message, returning asynchronous result
      *
      * @param msg message
      * @param <T> return type

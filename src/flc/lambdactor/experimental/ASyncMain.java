@@ -146,8 +146,45 @@ public class ASyncMain {
         // returned value: 31407
     }
 
+    @SuppressWarnings({"CodeBlock2Expr", "Convert2MethodRef"})
+    static void easy_to_learn(IGreenThrFactory factory) {
+        /*
+        1. Extend your class (A) from ActorBase:
+        */
+        class A extends ActorBase<A> {
+            int x;
+            void increaseX() {++x;}
+            int getX() {return x;}
+        }
+        /*
+        2. Create a new instance (a) of A in an actor reference.
+           The 'init' call binds (a) with a lightweight thread (green-thread)
+           to queue and process its received messages:
+        */
+        IActorRef<A> refA = new A()
+                .init(factory); //binds (a) with a new thread.
+        /*
+        3. Send messages:
+          i) Send = Basic one-way messaging
+        */
+        refA.send(a -> a.increaseX());
+        refA.send(A::increaseX); //same effect
+        /*
+          ii) Call = Messages with callback
+        */
+        refA.call(
+                A::getX
+                // getX is called from the thread of refA
+
+                , x -> System.out.println(" got x: " + x)
+                // callback; called at my own thread
+        );
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThr_zero()) {
+            f.newThread()
+                    .execute(() -> easy_to_learn(f));
             nonBlockingFuture(f.newThread());
         }
         asyncConcept("test string");
