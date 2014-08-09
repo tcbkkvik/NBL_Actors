@@ -9,9 +9,7 @@ package flc.lambdactor.examples;
 
 import flc.lambdactor.core.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -218,14 +216,95 @@ public class UsageEtcMain {
         }
     }
 
+    static void asyncConcept(String origString) {
+        ASyncValue<String> future = new ASyncValue<>();
+        log(" orig: " + origString);
+        future.result(s -> { //interface IASync<T>
+            log("  got: " + s);
+            assert origString.equals(s);
+        });
+        future.accept(origString);
+        future.update(v -> v + ", added to string");
+        future.result(s -> log("  got2: " + s));
+    }
+
+    @SuppressWarnings("Convert2MethodRef")
+    static void nonBlockingFuture(IGreenThr thr) {
+
+        class ValueActor {
+            final ASyncValue<Integer> async = new ASyncValue<>();
+
+            IASync<Integer> getAsync() {
+                return async;
+            }
+        }
+
+        class MainActor {
+            int gotValue;
+
+            void someCalls(int correct, IActorRef<ValueActor> ref) {
+                ref
+                        .call(a -> a.getAsync())
+                        .result(ret -> { //In MainActor thread:
+                            gotValue = ret;
+                            log(" correct value: " + correct);
+                            log("returned value: " + ret);
+                            assert ret == correct;
+                        });
+                ref.send(valueActor
+                        -> valueActor.async.accept(correct));
+            }
+        }
+        IActorRef<ValueActor> valRef = new ActorRef<>(new ValueActor(), thr);
+        IActorRef<MainActor> mainRef = new ActorRef<>(new MainActor(), thr);
+        mainRef.send(a -> a.someCalls(31407, valRef));
+        // Output:
+        // correct value: 31407
+        // returned value: 31407
+    }
+
+    @SuppressWarnings({"CodeBlock2Expr", "Convert2MethodRef"})
+    static void easy_to_learn(IGreenThrFactory factory) {
+        //PS. Must run inside an instance of 'IGreenThr'
+        /* 1. Extend your class (A) from ActorBase: */
+        class A extends ActorBase<A> {
+            int x;
+            void increaseX() {++x;}
+            int getX() {return x;}
+        }
+
+        /* 2. Create a new instance (a) of A in an actor reference.
+           The 'init' call binds (a) with a lightweight thread (green-thread)
+           to queue and process its received messages: */
+        IActorRef<A> refA = new A()
+                .init(factory); //init: binds (a) with a new thread.
+
+        /* 3. Send it messages
+            3.1) Send = Basic one-way messaging: */
+        refA.send(a -> a.increaseX());
+        refA.send(A::increaseX); //same effect
+
+        /*  3.2) Call = Messages with callback: */
+        refA.call(
+                A::getX
+                // getX is called from the thread of refA
+
+                , x -> System.out.println(" got x: " + x)
+                // callback; called at my own thread
+        );
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThr_single(false)) {
+            f.newThread().execute(() -> easy_to_learn(f));
+            nonBlockingFuture(f.newThread());
             new CallChain().demo(f);
             Throttle.demo(f, 7);
             cancelOp(f);
             minimumExample(f);
             actorBaseExample(f);
         }
+        asyncConcept("test string");
     }
 
 }
