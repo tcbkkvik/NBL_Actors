@@ -12,7 +12,8 @@ import java.util.function.*;
 
 /**
  * Actor reference.
- * <p>Provides safe asynchronous access to actor implementation methods.
+ * <p>Provides safe asynchronous, typed access to a
+ * user defined actor-object (A) contained within this reference.
  * </p>
  * <pre> Minimum example:
  * {@code
@@ -30,22 +31,33 @@ import java.util.function.*;
  * </pre>
  * Date: 02.08.13
  *
- * @param <A> The type of user object (actor implementation) held
- *           and protected by this actor reference.
- *
+ * @param <A> Type of the enclosed actor-object (implementation).
  * @author Tor C Bekkvik
  */
 public interface IActorRef<A> {
 
     /**
-     * Send message to this actor
+     * Send a one-way message to this actor;
+     * The message may be processed immediately, or scheduled to be
+     * processed later. When processed, {@link Consumer#accept} is called
+     * on the message, with the contained actor-object as argument.
+     * (Ie. any methods on the actor-object can be called from
+     * within the message lambda-block. Being typed implies
+     * compile-time type checking, and no need for explicit message types)
+     * <p>
+     * For thread-safety, avoid leaking shared-multiple-access, as the
+     * message may be processed in another thread; Do not access mutable,
+     * non-synchronized fields on any other object than the actor-object
+     * argument. (But thread-safe utilities, like those in
+     * {@code java.util.concurrent.atomic}, can be quite useful)
+     * </p>
      *
      * @param msg Message
      */
     void send(Consumer<A> msg);
 
     /**
-     * Call: Send message with callback function to handle result.
+     * Call: Send two-way message, with a callback function to handle the result
      *
      * @param msg      message
      * @param callback result handler
@@ -64,7 +76,7 @@ public interface IActorRef<A> {
     }
 
     /**
-     * Call: Send a message, returning asynchronous result
+     * Call: Send a two-way message, returning an asynchronous result
      *
      * @param msg message
      * @param <T> return type

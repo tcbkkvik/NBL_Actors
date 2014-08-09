@@ -16,10 +16,10 @@ of the actor-model. Redundant concepts and code has continuously been trimmed aw
 ## Easy to learn
 Basically, an object of a type 'A', wrapped inside an actor reference (`IActorRef<A>`),
 becomes an actor. This object should not be referred directly (except from this actor itself)
-, but by sending it messages through its actor reference.
+, but by sending it messages only via its actor reference.
 
 
-Her is a mini-tutorial, covering all essential concepts (as working code):
+Here is a mini-tutorial, covering all essential concepts (working code):
 ```java
     static void easy_to_learn(IGreenThrFactory factory) {
         //PS. Must run inside an instance of 'IGreenThr'
@@ -198,7 +198,7 @@ Example - Return an asynchronous value via `IASync`:
 
 ### Non-blocking Fork/Join
 The `ForkJoin` utility class gives you fully generic, non-blocking Fork/Join.
-Each call to `ForkJoin.call` or `ForkJoin.callAsync` forks a new concurrent child node (=computation),
+Each call to `ForkJoin.call` or `ForkJoin.callAsync` forks a new concurrent child node (computation),
 which is free to start other types of computation (heterogeneous).
 It can also be recursive.
 
@@ -242,14 +242,14 @@ Adding Cancel functionality with `AtomicBoolean`:
 ### Flow control
 Message-queue overflow can in general be avoided by
 returning feedback-messages to sending actor.
-The sender can then slow down by:
+The sender can then slow down by either:
 
     1. Blocking until consuming actor is ready. (best to avoid?)
     2. Instead of blocking, thread could alternatively help receiving actor (if not already active)
     3. Rejecting received message. (vital messages lost?)
     4. Message-pulling instead of passive receive.
     
-Example:
+Example, message-pulling:
 ```java
         //User defined method inside actor:
         public void pullNextMessage() {
@@ -275,7 +275,7 @@ Example; Passing a message through a chain of actors:
                 actorIt.next()
                         .send(a -> {
                             a.gotIt();
-                            //Got message! now try next actor in chain:
+                            //Got message! now send to next actor in chain:
                             recursive_call_chain(actorIt);
                         });
             else
@@ -284,8 +284,8 @@ Example; Passing a message through a chain of actors:
 ```
 
 ### Distributed computing?
-Messaging over a network is not implemented, but could become an option by
-serializing `IActorRef.send(java.util.function.Consumer<A> msg)`..
+Messaging over a network is not implemented. (..but could become an option by
+serializing `IActorRef.send(java.util.function.Consumer<A> msg)`)
 
 
 ## More documentation..
