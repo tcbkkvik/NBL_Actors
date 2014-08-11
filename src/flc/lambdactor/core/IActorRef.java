@@ -39,7 +39,7 @@ public interface IActorRef<A> {
     /**
      * Send a one-way message to this actor;
      * The message may be processed immediately, or scheduled to be
-     * processed later. When processed, {@link Consumer#accept} is called
+     * processed later. When processed, {@link Consumer#accept(Object)} is called
      * on the message, with the contained actor-object as argument.
      * (Ie. any methods on the actor-object can be called from
      * within the message lambda-block. Being typed implies
