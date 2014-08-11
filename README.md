@@ -1,25 +1,36 @@
-Lambda-Actor
-============
+Non-Blocking Lambda-based Actors
+================================
 
-A lightweight, easy to learn, flexible, typed-[actor](http://en.wikipedia.org/wiki/Actor_model)
-concurrency API, based on lambdas (Java 8).
+A lightweight but powerful [actor](http://en.wikipedia.org/wiki/Actor_model)
+concurrency API, based on java lambdas from start..
 
 An actor can be seen as an extension of the Object-Oriented (OO) model:
 While the OO-model is good at protecting private fields and methods, its default
 multi-threading synchronization is often hard to get right.
-In contrast, an actor object has built-in concurrency protection with its message based concurrency.
+In contrast, an actor at least offers built-in concurrency protection
+through message based concurrency.
 
 Taking full advantage of lambdas from beginning, this API is a compact yet flexible implementation
 of the actor-model. Redundant concepts and code has continuously been trimmed away
 , intended to achieve a high "power-to-weight" ratio (Ie. few concepts, but simple to combine).
 
-## Easy to learn
+## Core features
+    * Intuitive + lambdas: Few concepts but easy to combine, giving readable code.
+    * Safe concurrent access: Actor state protected behind its actor-reference.
+    * Non-blocking: Callbacks/lambda-continuations instead of blocking Futures.
+    * Typed actors: Implies compile-time type checking and no explicit message types.
+    * Fork/Join: Non-blocking, fully general.
+    * Small but extensible:
+        No external libraries (except JUnit for tests),
+        no fancy processing (no reflection, proxy-generation, or byte-code manipulation),
+        but flexible interfaces (for thread, thread-factory, actor-reference)
+
+## Easy to use
 Basically, an object of a type 'A', wrapped inside an actor reference (`IActorRef<A>`),
-becomes an actor. This object should not be referred directly (except from this actor itself)
-, but by sending it messages only via its actor reference.
+becomes an actor. The original object should not be referred directly (except from
+the object itself), but by sending it messages only via its actor-reference.
 
-
-Here is a mini-tutorial, covering all essential concepts (working code):
+Here is a **mini-tutorial**, covering all essential concepts (working code):
 ```java
     static void easy_to_learn(IGreenThrFactory factory) {
         //PS. Must run inside an instance of 'IGreenThr'
@@ -51,7 +62,7 @@ Here is a mini-tutorial, covering all essential concepts (working code):
         );
     }
 ```
-..Ready to try yourself?
+..Ready to try?
 
 ## Usage patterns
 
@@ -60,9 +71,8 @@ Wrapping an object inside an actor reference (`IActorRef`),
 protects it against concurrent access, as long as all calls from
 other threads or actors goes through this reference.
 
-Although its best to extend from `ActorBase` to make clear that
-the methods should no be called directly from other threads
-, it is possible to transform a plain java object into an actor..
+Although its recommended to extend from `ActorBase`, it is possible
+to transform a plain java object into an actor..
 
 Example:
 ```java
@@ -78,7 +88,7 @@ Example:
                 new PlainObj());
         //send a message = asynchronous method call (lambda expression):
         ref.send(a -> a.someMethod(34));
-        //PS. Avoid leaking shared-mutable-access via message passing.
+        //PS. Avoid leaking mutable objects via messages between threads.
     }
 ```
 
@@ -244,9 +254,12 @@ Message-queue overflow can in general be avoided by
 returning feedback-messages to sending actor.
 The sender can then slow down by either:
 
-    1. Blocking until consuming actor is ready. (best to avoid?)
-    2. Instead of blocking, thread could alternatively help receiving actor (if not already active)
-    3. Rejecting received message. (vital messages lost?)
+    1. Blocking until consuming actor is ready.
+        (best to avoid?)
+    2. Alternatively, thread could help receiving actor.
+        (if passive)
+    3. Rejecting received message.
+        (vital messages lost?)
     4. Message-pulling instead of passive receive.
     
 Example, message-pulling:
@@ -271,7 +284,7 @@ This gives you a lot of flexibility..
 Example; Passing a message through a chain of actors:
 ```java
         static void recursive_call_chain(Iterator<IActorRef<A>> actorIt) {
-            if (actorIt.hasNext())
+            if (actorIt.hasNext()) //NB! Assumed thread-safe.
                 actorIt.next()
                         .send(a -> {
                             a.gotIt();
@@ -289,5 +302,5 @@ serializing `IActorRef.send(java.util.function.Consumer<A> msg)`)
 
 
 ## More documentation..
-* For more examples & other source code: Check under src/flc/lambdactor/...
-* Java docs; Download as ZIP file; check under the doc/ folder.
+* For more examples & code: check under src/...
+* Java docs; Download ZIP file; browse doc/index.html

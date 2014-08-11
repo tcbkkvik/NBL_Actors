@@ -49,7 +49,7 @@ public interface IActorRef<A> {
      * message may be processed in another thread; Do not access mutable,
      * non-synchronized fields on any other object than the actor-object
      * argument. (But thread-safe utilities, like those in
-     * {@code java.util.concurrent.atomic}, can be quite useful)
+     * {@code java.util.concurrent.atomic}, can be useful)
      * </p>
      *
      * @param msg Message
