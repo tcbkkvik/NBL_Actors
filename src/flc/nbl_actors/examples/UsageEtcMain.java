@@ -38,23 +38,6 @@ public class UsageEtcMain {
         //PS. Avoid leaking shared-mutable-access via message passing.
     }
 
-    static void actorBaseExample(IGreenThrFactory factory) {
-        log("actorBaseExample..");
-        class Impl extends ActorBase<Impl> {
-            void otherMethod(String message) {
-                System.out.println(message + ": done!");
-            }
-
-            void someMethod(String message) {
-                this.self().send(a -> a.otherMethod(message));
-            }
-        }
-        //call 'init' to initiate reference:
-        IActorRef<Impl> ref = new Impl().init(factory);
-        //send a message = asynchronous method call (lambda expression):
-        ref.send(a -> a.someMethod("do it!"));
-    }
-
     static void log(Object o) {
         System.out.println(o);
     }
@@ -302,7 +285,6 @@ public class UsageEtcMain {
             Throttle.demo(f, 7);
             cancelOp(f);
             minimumExample(f);
-            actorBaseExample(f);
         }
         asyncConcept("test string");
     }

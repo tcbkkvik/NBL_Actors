@@ -94,22 +94,27 @@ Example:
 
 ### Actor base class
 Get access to more actor functionality by extending from class `ActorBase`.
-Example - Actor sends to itself using `ActorBase.self`:
+Example - Using `ActorBase.self` to generate fibonacci sequence:
 ```java
-    static void actorBaseExample(IGreenThrFactory factory) {
-        class Impl extends ActorBase<Impl> {
-            void otherMethod(String message) {
-                System.out.println(message + ": done!");
-            }
+    public class Fibonacci extends ActorBase<Fibonacci> {
 
-            void someMethod(String message) {
-                this.self().send(a -> a.otherMethod(message));
-            }
+        public void fib(BigInteger a, BigInteger b
+                    , Function<BigInteger, Boolean> out)
+        {
+            if (out.apply(a)) //output
+                self().send(s -> s.fib(b, a.add(b), out));
         }
-        //call 'init' to initiate reference:
-        IActorRef<Impl> ref = new Impl().init(factory);
-        //send a message = asynchronous method call (lambda expression):
-        ref.send(a -> a.someMethod("do it!"));
+
+        public static void run(IGreenThrFactory factory
+                    , Function<BigInteger, Boolean> output)
+        {
+            // 1. call 'init' to initiate reference
+            // 2. send a message = asynchronous method call (lambda expression)
+            new Fibonacci()
+                    .init(factory)
+                    .send(s -> s.fib(BigInteger.ONE, BigInteger.ONE, output));
+            //Output: 1  1  2  3  5  8  13  21  34 ..
+        }
     }
 ```
 
