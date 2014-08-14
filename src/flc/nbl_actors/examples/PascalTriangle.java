@@ -20,17 +20,20 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class PascalTriangle extends ActorBase<PascalTriangle> {
-    private IActorRef<PascalTriangle> next;
-    private BigInteger curr = BigInteger.ONE;
+    private IActorRef<PascalTriangle> right; //next actor in expanding chain
+    private BigInteger value = BigInteger.ONE;
 
-    public void calc(BigInteger leftParent, Consumer<BigInteger> row) {
-        row.accept(curr);
-        final BigInteger prev = curr;
-        curr = curr.add(leftParent);
-        if (next != null)
-            next.send(a -> a.calc(prev, row));
+    public void receive(BigInteger leftValue, Consumer<BigInteger> row) {
+        row.accept(value);
+        rightSend(value, row);
+        value = value.add(leftValue);
+    }
+
+    private void rightSend(BigInteger leftValue, Consumer<BigInteger> row) {
+        if (right != null)
+            right.send(a -> a.receive(leftValue, row));
         else {
-            next = new PascalTriangle().init();
+            right = new PascalTriangle().init();
             row.accept(BigInteger.ZERO);//done
         }
     }
@@ -65,7 +68,7 @@ public class PascalTriangle extends ActorBase<PascalTriangle> {
             System.out.println("Pascal triangle, #rows: " + noRows);
             for (int row = 0; row < noRows; row++) {
                 final Row out = new Row(row);
-                ref.send(a -> a.calc(BigInteger.ZERO, out));
+                ref.send(a -> a.receive(BigInteger.ZERO, out));
             }
         }
         /*Output example:
