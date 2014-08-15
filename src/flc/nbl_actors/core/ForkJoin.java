@@ -89,9 +89,7 @@ public class ForkJoin<R> {
     public <T> void callAsync(IGreenThr toThread, Supplier<IASync<T>> call, Consumer<T> reply) {
         ++pendingCalls;
         toThread.execute(() -> call.get()
-                .result(v -> join(
-                        () -> reply.accept(v))
-                ));
+                .result(new SendBack<>(reply)));
     }
 
     /**
@@ -163,9 +161,7 @@ public class ForkJoin<R> {
     public <A, T> void callAsync(IActorRef<A> toRef, Function<A, IASync<T>> call, Consumer<T> reply) {
         ++pendingCalls;
         toRef.send(a -> call.apply(a)
-                .result(v -> join(
-                        () -> reply.accept(v))
-                ));
+                .result(new SendBack<>(reply)));
     }
 
     /**
@@ -304,4 +300,17 @@ public class ForkJoin<R> {
             consumer.accept(value);
     }
 
+    private class SendBack<T> implements Consumer<T> {
+        int no;
+        final Consumer<T> reply;
+
+        private SendBack(Consumer<T> reply) {
+            this.reply = reply;
+        }
+
+        @Override
+        public void accept(T v) {
+            if (++no == 1) join(() -> reply.accept(v));
+        }
+    }
 }
