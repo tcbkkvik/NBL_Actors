@@ -64,13 +64,19 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
                 tc
                         .setThread(GreenThr_single.this)
                         .setFactory(myFactory);
-                while (runCheck()) {
+                while (!isStopping) {
                     try {
-                        tc.beforeRun();
-                        queue.take().run();
+                        Runnable task = queue.take();
+                        threadActive.setActive(true);
+                        while (!isStopping && task != null) {
+                            tc.beforeRun();
+                            task.run();
+                            task = queue.poll();
+                        }
                     } catch (Exception e) {
                         onException(e);
                     }
+                    threadActive.setActive(false);
                 }
             }
         };
@@ -117,19 +123,6 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
      */
     public void await(long ms) throws InterruptedException {
         thr.join(ms);
-    }
-
-    /**
-     * Check running state
-     *
-     * @return true to keep running
-     */
-    private boolean runCheck() {
-        if (queue.isEmpty()) {
-            threadActive.setActive(false);
-            return !isStopping;
-        }
-        return true;
     }
 
     @Override
