@@ -54,7 +54,7 @@ public class ThreadActivity {
         listener.accept(isActive.get());
     }
 
-    static class Counts {
+    public static class Counts {
         class Source implements Consumer<Boolean> {
             final AtomicBoolean active = new AtomicBoolean();
 
@@ -65,13 +65,11 @@ public class ThreadActivity {
             }
         }
 
-        public final List<Source> sources = new ArrayList<>();
+        private final List<Source> sources = new ArrayList<>();
         private final AtomicBoolean isActive = new AtomicBoolean();
         private final AtomicBoolean flagged = new AtomicBoolean();
-        private volatile Consumer<Boolean> listener = a -> {
-        };
-
-        final List<IGreenThrFactory> factories = new ArrayList<>();
+        private volatile Consumer<Boolean> listener = a -> {};
+        public final List<IGreenThrFactory> factories = new ArrayList<>();
 
         public Counts() {
         }
