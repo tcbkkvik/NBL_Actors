@@ -51,128 +51,77 @@ public class ThreadActivity {
      */
     public void setListener(Consumer<Boolean> listener) {
         this.listener = Objects.requireNonNull(listener);
-        this.listener.accept(isActive.get());
+        listener.accept(isActive.get());
     }
 
-    /**
-     * Activity listener: from Integer to Boolean
-     */
-    private static class Count2Active implements Consumer<Integer> {
-        final Consumer<Boolean> listener;
-        final AtomicBoolean isActive = new AtomicBoolean();
-        volatile boolean first = true;
-
-        Count2Active(Consumer<Boolean> listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        public void accept(Integer count) {
-            boolean active = count > 0;
-            if (first || isActive.compareAndSet(!active, active)) {
-                listener.accept(active);
-                first = false;
-            }
-        }
-    }
-
-    public static class Counts {
-        public final List<IGreenThrFactory> factories = new ArrayList<>();
-        private final AtomicInteger activeCount = new AtomicInteger();
-        private volatile Consumer<Integer> listener = a -> {};
-        private volatile boolean isShutdownScheduled;
-
-        public Counts() {}
-
-        /**
-         * @param list list of thread factories to listen to.
-         */
-        public Counts(List<IGreenThrFactory> list) {
-            list.forEach(this::listenTo);
-        }
-
-        /**
-         * Add thread factory to listen to.
-         *
-         * @param f thread factory
-         */
-        public void listenTo(IGreenThrFactory f) {
-            factories.add(Objects.requireNonNull(f));
-            f.setActiveListener(new Active2Delta());
-        }
-
-        /**
-         * Set boolean activity listener, triggered only
-         * when condition (count &gt; 0) changes.
-         * <p>Calls {@link #setNumActiveListener(Consumer)}
-         * </p>
-         *
-         * @param listener boolean listener
-         */
-        public void setActiveListener(Consumer<Boolean> listener) {
-            setNumActiveListener(new Count2Active(listener));
-        }
-
-        /**
-         * Set listener for #active threads, triggered
-         * when #active changes.
-         *
-         * @param activeCountListener active count listener
-         */
-        public void setNumActiveListener(Consumer<Integer> activeCountListener) {
-            listener = Objects.requireNonNull(activeCountListener);
-            listener.accept(activeCount.get());
-        }
-
-        private void trigger(int delta) {
-            listener.accept(activeCount.addAndGet(delta));
-        }
-
-        private class Active2Delta implements Consumer<Boolean> {
-            private Boolean isActive;
+    static class Counts {
+        class Source implements Consumer<Boolean> {
+            final AtomicBoolean active = new AtomicBoolean();
 
             @Override
-            public synchronized void accept(Boolean active) {
-                if (isActive == null) {
-                    if (active) trigger(1);
-                } else if (active != isActive)
-                    trigger(active ? 1 : -1);
-                isActive = active;
+            public void accept(Boolean act) {
+                active.set(act);
+                signal(act);
             }
         }
 
-        /**
-         * Calls {@link IGreenThrFactory#shutdown()} when
-         * no more activity.
-         *
-         * @return this
-         */
-        public Counts onEmptyShutdown() {
-            isShutdownScheduled = true;
-            setNumActiveListener(count -> {
-                if (count == 0)
-                    factories.forEach(IGreenThrFactory::shutdown);
-            });
-            return this;
+        public final List<Source> sources = new ArrayList<>();
+        private final AtomicBoolean isActive = new AtomicBoolean();
+        private final AtomicBoolean flagged = new AtomicBoolean();
+        private volatile Consumer<Boolean> listener = a -> {
+        };
+
+        final List<IGreenThrFactory> factories = new ArrayList<>();
+
+        public Counts() {
         }
 
-        /**
-         * Waits at most {@code millis} milliseconds for threads to
-         * terminate. A timeout of {@code 0} means to wait forever.*
-         * <p>Calls {@link IGreenThrFactory#await(long)} for each factory.
-         * </p>
-         *
-         * @param millis maximum total time to wait in milliseconds
-         * @return this
-         *
-         * @throws InterruptedException if any thread has interrupted the current thread.
-         *                              or {@link #onEmptyShutdown()} was not called
-         */
-        public Counts await(long millis) throws InterruptedException {
-            if (!isShutdownScheduled)
-                throw new InterruptedException("onEmptyShutdown() was not called");
-            await0(millis);
-            return this;
+        public Counts(List<IGreenThrFactory> fs) {
+            fs.forEach(f -> {
+                sources.add(new Source());
+                factories.add(f);
+            });
+        }
+
+        private void signal(boolean sig) {
+            if (sig) {
+                setActive(true);
+                flagged.set(true);
+            } else {
+//                if (flagged.compareAndSet(true, false)) {
+//                    setActive(isOneActive());
+//                    flagged.set(true);
+//                }
+                synchronized (flagged) {
+                    flagged.set(false);
+                    setActive(isOneActive());
+                }
+            }
+        }
+
+        private boolean isOneActive() {
+            for (Source s : sources) {
+                if (s.active.get() || flagged.get())
+                    return true;
+            }
+            return flagged.get();
+        }
+
+        private void setActive(boolean active) {
+            if (isActive.getAndSet(active) != active)
+                listener.accept(active);
+        }
+
+        public void listenTo(IGreenThrFactory fact) {
+            Source s = new Source();
+            sources.add(s);
+            factories.add(fact);
+            fact.setActiveListener(s);
+        }
+
+        public void setActiveListener(Consumer<Boolean> al) {
+            listener = al;
+            al.accept(isActive.get());
         }
 
         public Counts await0(long millis) throws InterruptedException {
