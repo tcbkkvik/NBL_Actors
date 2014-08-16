@@ -23,7 +23,8 @@ of the actor-model. Redundant concepts and code has continuously been trimmed aw
     * Small but extensible:
         No external libraries (except JUnit for tests),
         no fancy processing (no reflection, proxy-generation, or byte-code manipulation),
-        but flexible interfaces (for thread, thread-factory, actor-reference)
+        but with extensible interfaces (thread, thread-factory, actor-reference..).
+        Additionally, you are free to combine it with any other actor libraries.
 
 ## Easy to use
 Basically, an object of a type 'A', wrapped inside an actor reference (`IActorRef<A>`),
@@ -151,8 +152,10 @@ Example:
                     });
         }
     }
-
 ```
+Also, consider sending immutable objects.
+Tips: guava-libraries might be useful, for example with
+'com.google.common.collect.ImmutableList'.
 
 ### Become - change runtime behaviour
 Change behaviour by calling `ActorBase.become`;
