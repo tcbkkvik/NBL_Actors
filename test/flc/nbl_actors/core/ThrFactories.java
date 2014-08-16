@@ -32,8 +32,11 @@ public class ThrFactories {
 
         if (cons != null) {
             ActorTests.log("\nTesting (" + (++no) + ") " + ActorTests.className(factory) + " ..");
-            cons.accept(factory);
-            factory.close();
+            try {
+                cons.accept(factory);
+            } finally {
+                factory.close();
+            }
             factory.await(300);
         }
         return this;

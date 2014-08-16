@@ -191,6 +191,7 @@ public class ActorTests {
                 responseCount.incrementAndGet();
             }));
         }
+        Thread.sleep(10);
         AtomicBoolean isShutdownCalled = new AtomicBoolean(false);
         threads.setEmptyListener(() -> {
             assertEquals(N, responseCount.get());
