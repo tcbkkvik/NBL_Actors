@@ -55,20 +55,7 @@ public class ThreadActivity {
     }
 
     public static class Counts {
-        class Source implements Consumer<Boolean> {
-            final AtomicBoolean active = new AtomicBoolean();
-
-            @Override
-            public void accept(Boolean act) {
-                active.set(act);
-                signal(act);
-            }
-        }
-
-        private final List<Source> sources = new ArrayList<>();
-        private final AtomicBoolean isActive = new AtomicBoolean();
-        private final AtomicBoolean flagged = new AtomicBoolean();
-        private volatile Consumer<Boolean> listener = a -> {};
+        final ActiveCount ac = new ActiveCount();
         public final List<IGreenThrFactory> factories = new ArrayList<>();
 
         public Counts() {
@@ -76,50 +63,18 @@ public class ThreadActivity {
 
         public Counts(List<IGreenThrFactory> fs) {
             fs.forEach(f -> {
-                sources.add(new Source());
+                f.setActiveListener(ac.newParticipant());
                 factories.add(f);
             });
         }
 
-        private void signal(boolean sig) {
-            if (sig) {
-                setActive(true);
-                flagged.set(true);
-            } else {
-//                if (flagged.compareAndSet(true, false)) {
-//                    setActive(isOneActive());
-//                    flagged.set(true);
-//                }
-                synchronized (flagged) {
-                    flagged.set(false);
-                    setActive(isOneActive());
-                }
-            }
-        }
-
-        private boolean isOneActive() {
-            for (Source s : sources) {
-                if (s.active.get() || flagged.get())
-                    return true;
-            }
-            return flagged.get();
-        }
-
-        private void setActive(boolean active) {
-            if (isActive.getAndSet(active) != active)
-                listener.accept(active);
-        }
-
         public void listenTo(IGreenThrFactory fact) {
-            Source s = new Source();
-            sources.add(s);
             factories.add(fact);
-            fact.setActiveListener(s);
+            fact.setActiveListener(ac.newParticipant());
         }
 
         public void setActiveListener(Consumer<Boolean> al) {
-            listener = al;
-            al.accept(isActive.get());
+            ac.setActiveHandler(al);
         }
 
         private boolean isShutdownScheduled;
