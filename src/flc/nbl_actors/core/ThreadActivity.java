@@ -124,6 +124,42 @@ public class ThreadActivity {
             al.accept(isActive.get());
         }
 
+        private boolean isShutdownScheduled;
+
+        /**
+         * Calls {@link IGreenThrFactory#shutdown()} when
+         * no more activity.
+         *
+         * @return this
+         */
+        public Counts onEmptyShutdown() {
+            isShutdownScheduled = true;
+            setActiveListener(active -> {
+                if (!active)
+                    factories.forEach(IGreenThrFactory::shutdown);
+            });
+            return this;
+        }
+
+        /**
+         * Waits at most {@code millis} milliseconds for threads to
+         * terminate. A timeout of {@code 0} means to wait forever.*
+         * <p>Calls {@link IGreenThrFactory#await(long)} for each factory.
+         * </p>
+         *
+         * @param millis maximum total time to wait in milliseconds
+         * @return this
+         *
+         * @throws InterruptedException if any thread has interrupted the current thread.
+         *                              or {@link #onEmptyShutdown()} was not called
+         */
+        public Counts await(long millis) throws InterruptedException {
+            if (!isShutdownScheduled)
+                throw new InterruptedException("onEmptyShutdown() was not called");
+            await0(millis);
+            return this;
+        }
+
         public Counts await0(long millis) throws InterruptedException {
             final long t1 = System.currentTimeMillis() + millis;
             for (IGreenThrFactory f : factories) {
