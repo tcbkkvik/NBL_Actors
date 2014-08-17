@@ -12,16 +12,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Active Count utility; Keep continuous track of how many (concurrent) participants
+ * Active Count; Keep continuous track of concurrent activity level.
  * are active.
  * Date: 16.08.14
  *
  * @author Tor C Bekkvik
  */
-@SuppressWarnings("UnusedDeclaration")
 public class ActiveCount {
     public class Part implements Consumer<Boolean> {
         private final AtomicBoolean isActive = new AtomicBoolean();
+
+        public boolean getActive() {
+            return isActive.get();
+        }
 
         @Override
         public void accept(Boolean active) {
