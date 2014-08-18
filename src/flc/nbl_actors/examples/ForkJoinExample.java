@@ -23,7 +23,7 @@ public class ForkJoinExample {
         String[] arr = new String[no];
         int pos = 0;
         for (int ix = 0; ix < no; ix++) {
-            int step = (int) Math.ceil((str.length() - pos) / (no - ix));
+            int step = (str.length() - pos) / (no - ix);
             arr[ix] = str.substring(pos, pos + step);
             pos += step;
         }
