@@ -7,30 +7,27 @@
  */
 package flc.nbl_actors.experimental;
 
-import flc.nbl_actors.core.IActorRef;
-import flc.nbl_actors.core.IGreenThr;
-import flc.nbl_actors.core.ThreadContext;
+import flc.nbl_actors.core.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Transaction with actor participants
+ * Transaction with actor participants. Goal: atomic execution (state updated by NONE or ALL actors).
  * Date: 17.08.14
  *
  * @author Tor C Bekkvik
  */
 public class Transaction {
 
-    public enum State {
-        active(0), failed(-1), partSuccess(1), success(2);
-        public final int val;
+    static final Logger LOG = Logger.getLogger(Transaction.class.getSimpleName());
 
-        private State(int val) {
-            this.val = val;
-        }
+    public enum State {
+        active, failed, partReady, success;
 
         public boolean isSuccess() {
             return this == success;
@@ -44,20 +41,21 @@ public class Transaction {
             /* valid state transitions:
             active -> failed!
             active -> success!
-            active -> partSuccess -> [success or failed]!
+            active -> partReady -> [success or failed]!
              */
             switch (this) {
                 case active:
                     return s;
-                case partSuccess:
+                case partReady:
                     if (s != active) return s;
                     break;
                 case failed:
                 case success:
                     if (this == s) return s;
             }
-            throw new IllegalStateException(
-                    String.format("Illegal state change; %s -> %s", this, s));
+            String reason = String.format("Illegal state change; %s -> %s", this, s);
+            LOG.warning(reason);
+            throw new IllegalStateException(reason);
         }
     }
 
@@ -75,7 +73,6 @@ public class Transaction {
         final int id;
         final IGreenThr actorThread;
         private Runnable onCommit;
-        private boolean isReady; //ready to commit if also onCommit!=null
         private State partState = State.active;
 
         Exception ex;
@@ -93,8 +90,9 @@ public class Transaction {
         //--- fail:
         @Override
         public void fail(Exception e) {
-            ThreadContext.logTrace(e, String.format(
-                    "Transaction participant #%d failed", id));
+            String s = ThreadContext.shortTrace(e)
+                    + String.format("  Transaction participant #%d failed", id);
+            LOG.fine(s);
             ex = e;
             partState = partState.changeTo(State.failed);
             controller.fail();
@@ -115,13 +113,12 @@ public class Transaction {
         }
 
         private void ready2() {
-            isReady = true;
+            partState = partState.changeTo(State.partReady);
             readySend();
         }
 
         private void readySend() { //ready to commit
-            if (onCommit != null && isReady) {
-                partState = partState.changeTo(State.partSuccess);
+            if (onCommit != null && partState == State.partReady) {
                 controller.readyCommit();
             }
         }
@@ -135,7 +132,7 @@ public class Transaction {
                 try {
                     onCommit.run();
                 } catch (RuntimeException e) {
-                    ThreadContext.logTrace(e, "Exception during commit!");
+                    LOG.log(Level.WARNING, "Exception during commit!", e);
                 }
             });
         }
@@ -143,7 +140,6 @@ public class Transaction {
 
     private final Transaction controller = this;
     private final List<TransRef> participants = new ArrayList<>();
-    //    private final AtomicBoolean isAbort = new AtomicBoolean();
     private int noPending;
     private Consumer<Boolean> doneHandler;
     private volatile State state = State.active;

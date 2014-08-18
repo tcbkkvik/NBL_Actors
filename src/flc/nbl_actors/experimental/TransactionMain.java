@@ -9,6 +9,10 @@ package flc.nbl_actors.experimental;
 
 import flc.nbl_actors.core.*;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 /**
  * Transaction example
  * Date: 17.08.14
@@ -21,7 +25,13 @@ public class TransactionMain {
         int value;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+//        CountDownLatch latch = new CountDownLatch(1);
+//        boolean latchDone = latch.await(1, TimeUnit.MILLISECONDS);
+        Level myLevel = Level.FINE;
+        Logger log = Transaction.LOG;
+        log.getParent().getHandlers()[0].setLevel(myLevel);
+        log.setLevel(myLevel);
         try (IGreenThrFactory fact = new GreenThrFactory_single(4, false)) {
             Transaction transaction = new Transaction();
             for (int i = 0; i < 5; i++) {
