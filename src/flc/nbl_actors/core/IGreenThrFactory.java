@@ -8,6 +8,8 @@
 package flc.nbl_actors.core;
 
 import java.io.Closeable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -105,24 +107,28 @@ public interface IGreenThrFactory extends Closeable {
     void shutdownNow();
 
     /**
-     * Waits at most {@code millis} milliseconds for threads to
-     * terminate. A timeout of {@code 0} means to wait forever.
+     * Waits at most {@code millis} milliseconds for thread message-queue
+     * to become empty. A timeout of {@code 0} means to wait forever.
+     * Default implementation uses {@link java.util.concurrent.CountDownLatch#await()}
      * Use with care:
-     * Don't call from tasks running in child threads (created with {@link #newThread()})
-     * , including actors using this factory, or the method can deadlock.
-     * Before or while calling, be sure that {@link #shutdown()}
-     * or {@link #shutdownNow()} is called.
-     * <p>(Typically implemented by calling java.lang.Thread.join()
-     * or java.util.concurrent.ExecutorService.awaitTermination())
+     * Don't call from inside threads of this factory
+     * (created with {@link #newThread()}), or the method can deadlock.
      * </p>
      *
      * @param millis the time to wait in milliseconds
-     * @throws IllegalArgumentException if the value of {@code millis} is negative
-     * @throws InterruptedException     if any thread has interrupted the current thread. The
-     *                                  <i>interrupted status</i> of the current thread is
-     *                                  cleared when this exception is thrown.
+     * @throws InterruptedException if the current thread is interrupted while waiting,
+     *                              or time-out.
      */
-    void await(long millis) throws InterruptedException;
+    default void await(long millis) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        setEmptyListener(latch::countDown);
+        if (millis != 0) {
+            if (!latch.await(millis, TimeUnit.MILLISECONDS))
+                throw new InterruptedException("Timed out");
+        } else {
+            latch.await();
+        }
+    }
 
     /**
      * Prepare for shutdown of associated threads.
