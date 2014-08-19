@@ -54,7 +54,7 @@ public interface IGreenThrFactory extends Closeable {
     IGreenThr newThread();
 
     /**
-     * Set empty listener to be called when all threads of this factory becomes inactive.
+     * Set empty listener to be called once, when all threads of this factory becomes inactive.
      * Default implementation is based on {@link #setActiveListener(Consumer)}.
      *
      * @param listener called when done (empty message queues)
@@ -67,9 +67,14 @@ public interface IGreenThrFactory extends Closeable {
     }
 
     /**
-     * Set listener to be called each time threads changes active/non-active state.
-     * <p>Active = true: at least one thread have remaining work</p>
-     * <p>Passive = false: all threads have processed all messages</p>
+     * Set listener to be called once, when threads changes active/non-active state.
+     * <pre>
+     *  Active = true: at least one thread have remaining work</p>
+     *  Passive = false: all threads have processed all messages</p>
+     * </pre>
+     * The listener should be removed after first event (one-shot),
+     * unless it implements {@link flc.nbl_actors.core.ListenerSet.IMultiShot}.
+     * </p>
      *
      * @param listener called when active state changes
      */

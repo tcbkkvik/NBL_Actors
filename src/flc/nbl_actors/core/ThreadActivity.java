@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class ThreadActivity {
-    private volatile Consumer<Boolean> listener = a -> {};
+    private final ListenerSet<Boolean> listener = new ListenerSet<>();
     private final AtomicBoolean isActive = new AtomicBoolean();
 
     /**
@@ -50,7 +50,7 @@ public class ThreadActivity {
      * @param listener active listener
      */
     public void setListener(Consumer<Boolean> listener) {
-        this.listener = Objects.requireNonNull(listener);
+        this.listener.addListener(Objects.requireNonNull(listener));
         listener.accept(isActive.get());
     }
 

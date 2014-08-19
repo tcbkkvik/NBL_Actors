@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class ActiveCount {
-    public class Part implements Consumer<Boolean> {
+    public class Part implements ListenerSet.IMultiShot<Boolean> {
         private final AtomicBoolean isActive = new AtomicBoolean();
 
         public boolean getActive() {
@@ -34,18 +34,16 @@ public class ActiveCount {
     }
 
     private final AtomicInteger noActive = new AtomicInteger();
-    private volatile Consumer<Boolean> activeHandler = a -> {
-    };
-    private volatile Consumer<Integer> countHandler = n -> {
-    };
+    private final ListenerSet<Integer> countHandler = new ListenerSet<>();
+    private final ListenerSet<Boolean> activeHandler = new ListenerSet<>();
 
     public void setActiveHandler(Consumer<Boolean> handler) {
-        activeHandler = handler;
+        activeHandler.addListener(handler);
         handler.accept(noActive.get() > 0);
     }
 
     public void setCountHandler(Consumer<Integer> handler) {
-        countHandler = handler;
+        countHandler.addListener(handler);
         handler.accept(noActive.get());
     }
 
@@ -62,12 +60,11 @@ public class ActiveCount {
     }
 
     private void signal(int delta) {
+        if (delta == 0) return;
         int n0 = noActive.getAndAdd(delta);
         int n1 = n0 + delta;
         if (changedActivity(n0, n1)) {
-            synchronized (noActive) {
-                activeHandler.accept(n1 > 0);
-            }
+            activeHandler.accept(n1 > 0);
         }
         countHandler.accept(n1);
     }
