@@ -48,27 +48,13 @@ public class ListenerSet<T> implements Consumer<T> {
     }
 
     private final List<Listener<T>> list = new LinkedList<>();
-    private static final boolean OLD = false; //todo remove
-    private Listener<T> old_cons;
 
     public synchronized void addListener(Consumer<T> c) {
-        if (OLD) {
-            old_cons = new Listener<>(c, (c instanceof IMultiShot));
-            return;
-        }
         list.add(new Listener<>(c, (c instanceof IMultiShot)));
     }
 
     @Override
     public synchronized void accept(T t) {
-        if (OLD) {
-            Listener<T> listener = old_cons;
-            if (listener != null) {
-                if (!listener.isMultiShot) old_cons = null;
-                listener.accept(t);
-            }
-            return;
-        }
         Iterator<Listener<T>> it = list.iterator();
         while (it.hasNext()) {
             Listener<T> e = it.next();
