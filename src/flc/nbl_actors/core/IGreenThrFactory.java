@@ -54,10 +54,12 @@ public interface IGreenThrFactory extends Closeable {
     IGreenThr newThread();
 
     /**
-     * Set empty listener to be called once, when all threads of this factory becomes inactive.
-     * Default implementation is based on {@link #setActiveListener(Consumer)}.
+     * Set empty listener, called when all associated threads have
+     * empty message queues (called immediately if already inactive).
+     * Default implementation is based on {@link #setActiveListener(Consumer)},
+     * and handles a single event before being discarded.
      *
-     * @param listener called when done (empty message queues)
+     * @param listener called when inactive
      */
     default void setEmptyListener(Runnable listener) {
         setActiveListener(active -> {
@@ -67,14 +69,15 @@ public interface IGreenThrFactory extends Closeable {
     }
 
     /**
-     * Set listener to be called once, when threads changes active/non-active state.
+     * Set active listener; called when active status changes
+     * (with 'true' if at least one thread is active, ie. has more messages).
      * <pre>
-     *  Active = true: at least one thread have remaining work</p>
-     *  Passive = false: all threads have processed all messages</p>
+     * Callback sequence:
+     * (1) first called immediately with current state.
+     * (2) then once when state changes.
+     * (3) then discarded, unless the listener is an instance
+     * of {@link flc.nbl_actors.core.ListenerSet.IKeep}, where its retained.
      * </pre>
-     * The listener should be removed after first event (one-shot),
-     * unless it implements {@link flc.nbl_actors.core.ListenerSet.IMultiShot}.
-     * </p>
      *
      * @param listener called when active state changes
      */
@@ -118,7 +121,6 @@ public interface IGreenThrFactory extends Closeable {
      * Use with care:
      * Don't call from inside threads of this factory
      * (created with {@link #newThread()}), or the method can deadlock.
-     * </p>
      *
      * @param millis the time to wait in milliseconds
      * @throws InterruptedException if the current thread is interrupted while waiting,

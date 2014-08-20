@@ -20,47 +20,72 @@ import java.util.function.Consumer;
 public class ListenerSet<T> implements Consumer<T> {
 
     /**
-     * Multi-shot listener; Signals that this listener should not be
-     * removed/deactivated after first event. (One-shot listeners are the
-     * default)
+     * Signals that listener should be retained after initial event(s).
      * <p>
-     * Implementations of  {@link IGreenThrFactory#setActiveListener(java.util.function.Consumer)}
-     * should remove the listener after first event, if it is not instance of  {@link flc.nbl_actors.core.ListenerSet.IMultiShot}.
+     * Used by {@link IGreenThrFactory#setActiveListener(java.util.function.Consumer)}
      * </p>
      */
-    public interface IMultiShot<T> extends Consumer<T> {
+    public interface IKeep<T> extends Consumer<T> {
     }
 
-    static class Listener<E> implements Consumer<E> {
+    //Listener Soft Reference:
+    private static class SR<E> {
         final SoftReference<Consumer<E>> ref;
         final boolean isMultiShot;
 
-        Listener(Consumer<E> listener, boolean multiShot) {
+        SR(Consumer<E> listener, boolean multiShot) {
             ref = new SoftReference<>(listener);
             isMultiShot = multiShot;
         }
-
-        @Override
-        public void accept(E event) {
-            Consumer<E> c = ref.get();
-            if (c != null) c.accept(event);
-        }
     }
 
-    private final List<Listener<T>> list = new LinkedList<>();
+    //Separate add/active list: avoid ConcurrentModificationException
+    private final List<SR<T>> addList = new ArrayList<>(); //only append
+    private final List<SR<T>> activeList = new LinkedList<>(); //any element may be removed
+    boolean isActive;
 
     public synchronized void addListener(Consumer<T> c) {
-        list.add(new Listener<>(c, (c instanceof IMultiShot)));
+        addList.add(new SR<>(c, (c instanceof IKeep)));
     }
 
     @Override
-    public synchronized void accept(T t) {
-        Iterator<Listener<T>> it = list.iterator();
-        while (it.hasNext()) {
-            Listener<T> e = it.next();
-            if (!e.isMultiShot)
-                it.remove();
-            e.accept(t); //PS. user code may call addListener again
+    public synchronized void accept(T event) {
+        isActive = true;
+        activeList.addAll(addList);
+        addList.clear();
+        try {
+            toListeners(event, activeList);
+        } catch (Exception e) {
+            onError(e);
+        } finally {
+            isActive = false;
         }
     }
+
+    /**
+     * Event to listeners
+     *
+     * @param event event
+     * @param list  listeners (elements can be removed)
+     * @param <T>   event type
+     */
+    private static <T> void toListeners(T event, List<SR<T>> list) {
+        Iterator<SR<T>> it = list.iterator();
+        while (it.hasNext()) {
+            SR<T> e = it.next();
+            Consumer<T> c = e.ref.get();
+            if (!e.isMultiShot || c == null) it.remove();
+            if (c == null) continue;
+            try {
+                c.accept(event);
+            } catch (Exception ex) {
+                onError(ex);
+            }
+        }
+    }
+
+    private static void onError(Exception ex) {
+        ex.printStackTrace();
+    }
+
 }

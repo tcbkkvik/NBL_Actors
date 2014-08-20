@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class ActiveCount {
-    public class Part implements ListenerSet.IMultiShot<Boolean> {
+    public class Part implements ListenerSet.IKeep<Boolean> {
         private final AtomicBoolean isActive = new AtomicBoolean();
 
         public boolean getActive() {
@@ -38,8 +38,8 @@ public class ActiveCount {
     private final ListenerSet<Boolean> activeHandler = new ListenerSet<>();
 
     public void setActiveHandler(Consumer<Boolean> handler) {
-        activeHandler.addListener(handler);
         handler.accept(noActive.get() > 0);
+        activeHandler.addListener(handler);
     }
 
     public void setCountHandler(Consumer<Integer> handler) {

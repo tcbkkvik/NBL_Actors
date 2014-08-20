@@ -12,8 +12,9 @@ import org.junit.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Date: 16.08.14
@@ -45,5 +46,52 @@ public class CoreTests {
             p.accept(false);
             assertEquals(refCount.get(), ac.getCount());
         }
+    }
+
+    @Test
+    public void testThreadActivity() {
+        System.out.println("testThreadActivity..");
+        final ThreadActivity ta = new ThreadActivity();
+        class Listen implements Consumer<Boolean> {
+            int no, no2;
+            boolean active, active2;
+
+            @Override
+            public void accept(Boolean isActive) {
+                ++no;
+                assertTrue(isActive != active);
+                active = isActive;
+                ta.setListener(a -> {
+                    ++no2;
+                    active2 = a;
+                    //to do assert what??
+                    //java.util.ConcurrentModificationException ?
+                });
+            }
+        }
+
+        class ListenN extends Listen implements ListenerSet.IKeep<Boolean> {
+        }
+        Listen li = new Listen(); //non-durable listener (2 events: init + next ta.setActive)
+        ListenN liN = new ListenN();//durable listener (N events: multiShot)
+        boolean isActive = true;
+        //-----------------------------------
+        ta.setActive(isActive);
+        ta.setListener(li);
+        ta.setListener(liN);
+        for (int i = 1; i < 5; i++) {
+            System.out.println(i);
+            if (i <= 2) {
+                assertEquals(li.active, isActive);
+                assertEquals(li.no, i);
+            }
+            assertEquals(liN.active, isActive);
+            assertEquals(liN.no, i);
+            isActive = !isActive;
+            ta.setActive(isActive);
+            ta.setActive(isActive);
+        }
+        assertEquals(li.no, 2);
+        System.out.println("ok");
     }
 }
