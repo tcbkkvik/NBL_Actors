@@ -97,7 +97,7 @@ public class ForkJoin<R> {
      *
      * @param toThread target thread
      * @param call     action at target thread
-     * @param reply    reply action at this thread ((R currValue, T returned) -> {R BiFunction.apply})
+     * @param reply    reply action at this thread ((R currValue, T returned) -&gt; {R BiFunction.apply})
      * @param <T>      result type
      */
     public <T> void callAsync(IGreenThr toThread, Supplier<IASync<T>> call, BiFunction<R, T, R> reply) {
@@ -125,7 +125,7 @@ public class ForkJoin<R> {
      *
      * @param toThread target thread
      * @param call     action at target thread
-     * @param reply    reply action at this thread ((R currValue, T returned) -> {R BiFunction.apply})
+     * @param reply    reply action at this thread ((R currValue, T returned) -&gt; {R BiFunction.apply})
      * @param <T>      result type
      */
     public <T> void call(IGreenThr toThread, Supplier<T> call, BiFunction<R, T, R> reply) {
@@ -169,7 +169,7 @@ public class ForkJoin<R> {
      *
      * @param toRef target actor
      * @param call  action at target
-     * @param reply reply action at this thread ((R currValue, T returned) -> {R BiFunction.apply})
+     * @param reply reply action at this thread ((R currValue, T returned) -&gt; {R BiFunction.apply})
      * @param <A>   actor type
      * @param <T>   result type
      */
@@ -199,7 +199,7 @@ public class ForkJoin<R> {
      *
      * @param toRef target actor
      * @param call  action at target
-     * @param reply reply action at this thread ((R currValue, T returned) -> {R BiFunction.apply})
+     * @param reply reply action at this thread ((R currValue, T returned) -&gt; {R BiFunction.apply})
      * @param <A>   actor type
      * @param <T>   result type
      */
