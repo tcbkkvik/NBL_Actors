@@ -74,13 +74,16 @@ public class GreenThrFactory_Q implements IGreenThrFactory {
     }
 
     @Override
-    public void await(long millis) throws InterruptedException {
-        threads.await(millis);
+    public boolean await(long millis) throws InterruptedException {
+        return threads.await(millis);
     }
 
     private interface IThreads extends IGreenThrFactory, Executor {
         @Override
-        default IGreenThr newThread() {return null;}
+        default IGreenThr newThread() {
+            return null;
+        }
+
         void init(IGreenThrFactory parent);
     }
 
@@ -164,14 +167,24 @@ public class GreenThrFactory_Q implements IGreenThrFactory {
             shutdown();
         }
 
+        /**
+         * Wait for all threads to terminate (join)
+         *
+         * @param millis the time to wait in milliseconds
+         * @return false if timeout
+         * @throws InterruptedException
+         */
         @Override
-        public void await(long millis) throws InterruptedException {
+        public boolean await(long millis) throws InterruptedException {
             final long t1 = System.currentTimeMillis() + millis;
             for (Thread thr : realThreads) {
                 thr.join(millis);
+                if (thr.isAlive())
+                    return false;
                 if (millis > 0 && (millis = t1 - System.currentTimeMillis()) < 1)
-                    break;
+                    return false;
             }
+            return true;
         }
     }
 
@@ -218,8 +231,8 @@ public class GreenThrFactory_Q implements IGreenThrFactory {
         }
 
         @Override
-        public void await(long millis) throws InterruptedException {
-            service.awaitTermination(millis, TimeUnit.MILLISECONDS);
+        public boolean await(long millis) throws InterruptedException {
+            return service.awaitTermination(millis, TimeUnit.MILLISECONDS);
         }
     }
 

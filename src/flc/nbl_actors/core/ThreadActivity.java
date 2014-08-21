@@ -101,26 +101,26 @@ public class ThreadActivity {
          * </p>
          *
          * @param millis maximum total time to wait in milliseconds
-         * @return this
-         *
+         * @return false if timeout
          * @throws InterruptedException if any thread has interrupted the current thread.
          *                              or {@link #onEmptyShutdown()} was not called
          */
-        public Counts await(long millis) throws InterruptedException {
+        public boolean await(long millis) throws InterruptedException {
             if (!isShutdownScheduled)
                 throw new InterruptedException("onEmptyShutdown() was not called");
-            await0(millis);
-            return this;
+            return await0(millis);
         }
 
-        public Counts await0(long millis) throws InterruptedException {
+        public boolean await0(long millis) throws InterruptedException {
             final long t1 = System.currentTimeMillis() + millis;
             for (IGreenThrFactory f : factories) {
-                f.await(millis);
+                boolean ok = f.await(millis);
+                if (!ok)
+                    return false;//timeout
                 if (millis > 0 && (millis = t1 - System.currentTimeMillis()) < 1)
-                    break;
+                    return false;//timeout
             }
-            return this;
+            return true;
         }
     }
 

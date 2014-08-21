@@ -52,7 +52,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
      *                 <p> (The Java Virtual Machine exits when the only
      *                 threads running are all daemon threads.)
      *                 </p>
-     * @param f parent factory
+     * @param f        parent factory
      */
     public GreenThr_single(boolean isDaemon, IGreenThrFactory f) {
         myFactory = f == null ? this : f;
@@ -120,9 +120,12 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     /**
      * Calls {@code Thread.join} , which uses a loop of {@code this.wait} calls
      * conditioned on {@code this.isAlive}.
+     * @param ms the time to wait in milliseconds
+     * @return false if timeout
      */
-    public void await(long ms) throws InterruptedException {
+    public boolean await(long ms) throws InterruptedException {
         thr.join(ms);
+        return !thr.isAlive();
     }
 
     @Override

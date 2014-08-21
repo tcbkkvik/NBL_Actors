@@ -75,8 +75,9 @@ public interface IGreenThrFactory extends Closeable {
      * Callback sequence:
      * (1) first called immediately with current state.
      * (2) then once when state changes.
-     * (3) then discarded, unless the listener is an instance
-     * of {@link flc.nbl_actors.core.ListenerSet.IKeep}, where its retained.
+     * (3) then discarded, unless the listener is an
+     * instance of {@link flc.nbl_actors.core.ListenerSet.IKeep}, which
+     * makes it trigger repeatedly.
      * </pre>
      *
      * @param listener called when active state changes
@@ -115,7 +116,7 @@ public interface IGreenThrFactory extends Closeable {
     void shutdownNow();
 
     /**
-     * Waits at most {@code millis} milliseconds for thread message-queue
+     * Waits at most {@code millis} milliseconds for thread message-queues
      * to become empty. A timeout of {@code 0} means to wait forever.
      * Default implementation uses {@link java.util.concurrent.CountDownLatch#await()}
      * Use with care:
@@ -123,18 +124,16 @@ public interface IGreenThrFactory extends Closeable {
      * (created with {@link #newThread()}), or the method can deadlock.
      *
      * @param millis the time to wait in milliseconds
-     * @throws InterruptedException if the current thread is interrupted while waiting,
-     *                              or time-out.
+     * @return false if timeout
+     * @throws InterruptedException if the current thread is interrupted while waiting.
      */
-    default void await(long millis) throws InterruptedException {
+    default boolean await(long millis) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         setEmptyListener(latch::countDown);
-        if (millis != 0) {
-            if (!latch.await(millis, TimeUnit.MILLISECONDS))
-                throw new InterruptedException("Timed out");
-        } else {
-            latch.await();
-        }
+        if (millis != 0)
+            return latch.await(millis, TimeUnit.MILLISECONDS);
+        latch.await();
+        return true;
     }
 
     /**

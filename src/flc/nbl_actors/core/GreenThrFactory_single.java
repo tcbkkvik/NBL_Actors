@@ -100,9 +100,11 @@ public class GreenThrFactory_single implements IGreenThrFactory {
     /**
      * Calls {@code Thread.join} on all underlying threads.
      * A timeout of {@code 0} means to wait forever.
+     * @param ms the time to wait in milliseconds
+     * @return false if timeout
      */
-    public void await(long ms) throws InterruptedException {
-        activeCount.await0(ms);
+    public boolean await(long ms) throws InterruptedException {
+        return activeCount.await0(ms);
     }
 
     @Override

@@ -75,12 +75,13 @@ public class GreenThrFactory_Exec implements IGreenThrFactory {
      * A timeout of {@code 0} means wait a long time (default: 24 hours)
      *
      * @param millis the time to wait in milliseconds
+     * @return false if timeout
      * @throws InterruptedException if interrupted while waiting
      */
     @Override
-    public void await(long millis) throws InterruptedException {
+    public boolean await(long millis) throws InterruptedException {
         if (millis <= 0) millis = 3600L * 24 * 1000;
-        service.awaitTermination(millis, TimeUnit.MILLISECONDS);
+        return service.awaitTermination(millis, TimeUnit.MILLISECONDS);
     }
 
     static class ExBuf implements Executor {

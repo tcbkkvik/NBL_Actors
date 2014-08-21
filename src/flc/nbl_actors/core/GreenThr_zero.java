@@ -91,8 +91,9 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     }
 
     @Override
-    public void await(long millis) {
+    public boolean await(long millis) {
         pump();
+        return true;
     }
 
     public void close() {
