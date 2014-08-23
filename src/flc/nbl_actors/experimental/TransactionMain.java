@@ -25,7 +25,33 @@ public class TransactionMain {
         int value;
     }
 
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    static void tstTCon(boolean isErr) {
+        System.out.println("tstTCon  err:" + isErr);
+        Transaction.TCon tc = new Transaction.TCon();
+        for (int i = 3; i >= 0; i--) {
+            //participant:
+            Transaction.Part part = (Transaction.Part) tc.newPart();
+            final int ii = i;
+            if (isErr && i == 0)
+                part.fail(null);
+//            boolean err = part.isFailed();
+            part.ready(c -> {
+                System.out.println("  " + ii + " isCommit: " + c);
+                assert part.isFailed() == !c;
+            });
+        }
+        tc.ready(c -> {
+            tc.commit(c);
+            System.out.println(" Committed: " + c);
+            assert tc.getState().isCommit() == c;
+        });
+    }
+
+    @SuppressWarnings("UnnecessaryLocalVariable")
     public static void main(String[] args) throws InterruptedException {
+        tstTCon(true);
+        tstTCon(false);
 //        CountDownLatch latch = new CountDownLatch(1);
 //        boolean latchDone = latch.await(1, TimeUnit.MILLISECONDS);
         Level myLevel = Level.FINE;
@@ -33,8 +59,9 @@ public class TransactionMain {
         log.getParent().getHandlers()[0].setLevel(myLevel);
         log.setLevel(myLevel);
         try (IGreenThrFactory fact = new GreenThrFactory_single(4, false)) {
-            Transaction transaction = new Transaction();
-            for (int i = 0; i < 5; i++) {
+            final Transaction.ActorTCon transaction = new Transaction.ActorTCon();
+            for (int i = 0; i < 1; i++) {
+                final int ix = i;
                 boolean err = false;//i == 3;
                 IActorRef<Act> ref = new Act().init(fact);
                 transaction.send(ref, (tr, act) -> {
@@ -43,17 +70,19 @@ public class TransactionMain {
                         return;
                     }
                     if (err) throw new IllegalStateException("test err0");
-                    tr.ready(() -> {
+                    tr.readyCommit(() -> {
                         act.value = tmp;
-                        System.out.println(" actor committed: " + tr.getId());
+                        System.out.println(" actor committed: " + ix);
                     });
 //                    if (err) throw new IllegalStateException("test err");
                 });
             }
-            transaction.whenDone(isCommit -> {
+            transaction.ready(isCommit -> {
+                transaction.commit(isCommit);
                 System.out.println("Transaction done, committed = " + isCommit);
                 Transaction.State s = transaction.getState();
-                assert isCommit ? s.isSuccess() : s.isFailed();
+                assert isCommit ? s.isCommit() : s.isFailed();
+                assert transaction.getState().isDone();
             });
         }
     }
