@@ -126,6 +126,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
      *
      * @param ms the time to wait in milliseconds
      * @return false if timeout ({@code !thr.isAlive()})
+     * @throws InterruptedException if any thread has interrupted the current thread.
      */
     public boolean awaitThread(long ms) throws InterruptedException {
         thr.join(ms);

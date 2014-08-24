@@ -12,8 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Active Count; Keep continuous track of concurrent activity level.
- * are active.
+ * Active Count; Keep track of #running threads.
  * Date: 16.08.14
  *
  * @author Tor C Bekkvik

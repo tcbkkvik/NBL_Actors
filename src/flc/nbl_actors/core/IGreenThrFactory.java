@@ -72,11 +72,12 @@ public interface IGreenThrFactory extends Closeable {
      * Set active listener; called when active status changes
      * (with 'true' if at least one thread is active, ie. has more messages).
      * Callback sequence:
-     * <li>1: First called immediately with current state (in callers thread).</li>
-     * <li>2: Then once when state changes.</li>
-     * <li>3: Then discarded, unless the listener is an
-     * instance of {@link flc.nbl_actors.core.ListenerSet.IKeep}, which
-     * makes it trigger repeatedly.</li>
+     * <pre>
+     * 1: First called immediately with current state (in callers thread).
+     * 2: Then once when state changes.
+     * 3: Then discarded, unless the listener is an instance of {@link flc.nbl_actors.core.ListenerSet.IKeep},
+     *    which makes it trigger repeatedly.
+     * </pre>
      * NB; The listener may be called from any thread of this factory,
      * so if it accesses mutable fields, make sure it is tread-safe.
      *
