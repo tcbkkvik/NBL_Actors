@@ -212,7 +212,7 @@ public class UsageEtcMain {
     }
 
     @SuppressWarnings("Convert2MethodRef")
-    static void nonBlockingFuture(IGreenThr thr) {
+    static void nonBlockingFuture(IGreenThrFactory factory) {
 
         class ValueActor {
             final ASyncValue<Integer> async = new ASyncValue<>();
@@ -238,8 +238,8 @@ public class UsageEtcMain {
                         -> valueActor.async.accept(correct));
             }
         }
-        IActorRef<ValueActor> valRef = new ActorRef<>(new ValueActor(), thr);
-        IActorRef<MainActor> mainRef = new ActorRef<>(new MainActor(), thr);
+        IActorRef<ValueActor> valRef = new ActorRef<>(factory, new ValueActor());
+        IActorRef<MainActor> mainRef = new ActorRef<>(factory, new MainActor());
         mainRef.send(a -> a.someCalls(31407, valRef));
         // Output:
         // correct value: 31407
@@ -247,8 +247,8 @@ public class UsageEtcMain {
     }
 
     @SuppressWarnings({"CodeBlock2Expr", "Convert2MethodRef"})
-    static void easy_to_learn(IGreenThrFactory factory) {
-        //PS. Must run inside an instance of 'IGreenThr'
+    static void easy_to_learn(IGreenThrFactory factory)
+    {
         /* 1. Extend your class (A) from ActorBase: */
         class A extends ActorBase<A> {
             int x;
@@ -267,20 +267,24 @@ public class UsageEtcMain {
         refA.send(a -> a.increaseX());
         refA.send(A::increaseX); //same effect
 
-        /*  3.2) Call = Messages with callback: */
-        refA.call(
-                A::getX
-                // getX is called from the thread of refA
+        /*  3.2) Call = Messages with callback;
+                 Must itself be called from inside a
+                 green-thread for callback to work:*/
+        factory.newThread().execute(()->
+                refA.call(
+                        A::getX
+                        // getX is called from the thread of refA
 
-                , x -> System.out.println(" got x: " + x)
-                // callback; called at my own thread
+                        , x -> System.out.println(" got x: " + x)
+                        // callback; called at my own thread
+                )
         );
     }
 
     public static void main(String[] args) throws InterruptedException {
-        try (IGreenThrFactory f = new GreenThr_single(false)) {
-            f.newThread().execute(() -> easy_to_learn(f));
-            nonBlockingFuture(f.newThread());
+        try (IGreenThrFactory f = new GreenThrFactory_single(2, false)) {
+            easy_to_learn(f);
+            nonBlockingFuture(f);
             new CallChain().demo(f);
             Throttle.demo(f, 7);
             cancelOp(f);
