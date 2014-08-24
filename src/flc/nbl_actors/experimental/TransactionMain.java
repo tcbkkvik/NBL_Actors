@@ -31,7 +31,7 @@ public class TransactionMain {
         Transaction.TCon tc = new Transaction.TCon();
         for (int i = 3; i >= 0; i--) {
             //participant:
-            Transaction.Part part = (Transaction.Part) tc.newPart();
+            Transaction.Part part = (Transaction.Part) tc.addParticipant();
             final int ii = i;
             if (isErr && i == 0)
                 part.fail(null);
@@ -46,6 +46,7 @@ public class TransactionMain {
             System.out.println(" Committed: " + c);
             assert tc.getState().isCommit() == c;
         });
+        tc.readyCommit();
     }
 
     @SuppressWarnings("UnnecessaryLocalVariable")
@@ -60,11 +61,11 @@ public class TransactionMain {
         log.setLevel(myLevel);
         try (IGreenThrFactory fact = new GreenThrFactory_single(4, false)) {
             final Transaction.ActorTCon transaction = new Transaction.ActorTCon();
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 4; i++) {
                 final int ix = i;
                 boolean err = false;//i == 3;
                 IActorRef<Act> ref = new Act().init(fact);
-                transaction.send(ref, (tr, act) -> {
+                transaction.addParticipant(ref, (tr, act) -> {
                     final int tmp = act.value + 1;
                     if (tr.isFailed()) {
                         return;

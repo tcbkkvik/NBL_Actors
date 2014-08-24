@@ -16,7 +16,8 @@ import java.util.function.*;
 import java.util.logging.Logger;
 
 /**
- * Transaction with actor participants. Goal: atomic execution (state updated by NONE or ALL actors).
+ * Transaction with actor participants. Performs two-phase-commit
+ * updates on included participants (Atomic update).
  * Date: 17.08.14
  *
  * @author Tor C Bekkvik
@@ -26,7 +27,7 @@ public class Transaction {
     static final Logger LOG = Logger.getLogger(Transaction.class.getSimpleName());
 
     public enum State {
-        active, ready, failed, committed;
+        initial, ready, failed, committed;
 
         public boolean isCommit() {
             return this == committed;
@@ -42,12 +43,12 @@ public class Transaction {
 
         public State changeTo(State s) {
             /* valid state transitions:
-            active -> failed!
-            active -> ready -> [committed or failed]!
+            initial -> failed!
+            initial -> ready -> [committed or failed]!
              */
             if (s == this) return s;
             switch (this) {
-                case active:
+                case initial:
                     if (s == failed || s == ready) return s;
                     break;
                 case ready:
@@ -64,10 +65,26 @@ public class Transaction {
      */
     public interface IPart {//transaction participant
 
+        /**
+         * Signal that this participant failed
+         *
+         * @param e Reason
+         */
         void fail(Exception e);
 
+        /**
+         * Query controller if transaction failed,
+         * giving the participant to abort processing.
+         *
+         * @return true if transaction failed
+         */
         boolean isFailed();
 
+        /**
+         * Participant succeeded locally, and is ready to commit.
+         *
+         * @param onDone callback; called with 'true' if participant shall commit.
+         */
         void ready(Consumer<Boolean> onDone);//true -> commit
 
         default void readyCommit(Runnable onCommit) {
@@ -81,13 +98,41 @@ public class Transaction {
      * Transaction Controller interface
      */
     public interface ITCon {
-        IPart newPart();
+        /**
+         * Add participant to transaction
+         *
+         * @return new participant reference
+         */
+        IPart addParticipant();
 
+        /**
+         * Get transaction state
+         *
+         * @return state
+         */
         State getState();
 
+        /**
+         * All participants added (no more {@link #addParticipant()} calls)
+         *
+         * @param onDone callback: true if all participants succeeded (can commit)
+         */
         void ready(Consumer<Boolean> onDone);//true -> commit
 
+        /**
+         * Signals that transaction is allowed to commit
+         * (if internal conditions are satisfied)
+         *
+         * @param isCommit true: shall commit
+         */
         void commit(boolean isCommit);
+
+        /**
+         * Utility method; Equivalent to ready(c -&gt; commit(c));
+         */
+        default void readyCommit() {
+            ready(this::commit);
+        }
     }
 
     //---------------------------------------------------
@@ -97,7 +142,7 @@ public class Transaction {
      */
     static class Part implements IPart {
         private final TCon tc;
-        private State state = State.active;
+        private State state = State.initial;
         private Consumer<Boolean> onDone;
 
         Part(TCon tc) {
@@ -107,7 +152,7 @@ public class Transaction {
         @Override
         public void fail(Exception e) {
             switch (state) {
-                case active:
+                case initial:
                 case ready:
                     state = state.changeTo(State.failed);
                     tc.partResult(false);
@@ -123,25 +168,25 @@ public class Transaction {
         public void ready(Consumer<Boolean> onDone) {
             this.onDone = Objects.requireNonNull(onDone);
             switch (state) {
-                case active:
+                case initial:
                     state = state.changeTo(State.ready);
                     tc.partResult(true);
                     break;
-                case failed:
-                case committed:
-                    onDone.accept(state.isCommit());
+//                case failed:
+//                case committed:
+//                    onDone.accept(state.isCommit());
             }
         }
 
         private void commit(boolean isCommit) {
             switch (state) {
+                case initial:
                 case ready:
                     state = state.changeTo(isCommit
                             ? State.committed
                             : State.failed);
-                case failed:
-                case committed:
-                    if (onDone != null) onDone.accept(state.isCommit());
+                    if (onDone != null)
+                        onDone.accept(isCommit);
             }
         }
     }
@@ -150,7 +195,7 @@ public class Transaction {
      * Transaction Controller
      */
     static class TCon implements ITCon {
-        private State state = State.active;
+        private State state = State.initial;
         private int noPending;
         private Consumer<Boolean> onDone; //todo my thread=?
         private List<Part> participants = new ArrayList<>();
@@ -164,7 +209,7 @@ public class Transaction {
 
         private synchronized void partResult(boolean ok) {
             switch (state) {
-                case active:
+                case initial:
                 case ready:
                     if (!ok) {
                         commit(false);
@@ -178,7 +223,7 @@ public class Transaction {
         }
 
         @Override
-        public synchronized IPart newPart() {
+        public synchronized IPart addParticipant() {
             Part p = new Part(this);
             ++noPending;
             participants.add(p);
@@ -194,20 +239,20 @@ public class Transaction {
         public synchronized void ready(Consumer<Boolean> onDone) {
             this.onDone = Objects.requireNonNull(onDone);
             switch (state) {
-                case active:
+                case initial:
                     state = state.changeTo(State.ready);
                     readyTrigger();
                     break;
-                case failed:
-                case committed:
-                    onDone.accept(state.isCommit());
+//                case failed:
+//                case committed:
+//                    onDone.accept(state.isCommit());
             }
         }
 
         @Override
         public synchronized void commit(boolean isCommit) {
             switch (state) {
-                case active:
+                case initial:
                 case ready:
                     state = state.changeTo(isCommit
                             ? State.committed
@@ -221,24 +266,24 @@ public class Transaction {
     //---------------------------------------------------
 
     static class ActorPart<A> implements IPart {
-        private final IPart proxy;
+        private final IPart part;
         private final IActorRef<A> ref;
         private boolean readyPrepared;
         private Consumer<Boolean> readyAction;
 
-        ActorPart(IPart proxy, IActorRef<A> ref) {
-            this.proxy = proxy;
-            this.ref = ref;
+        ActorPart(IPart part, IActorRef<A> actorRef) {
+            this.part = part;
+            ref = actorRef;
         }
 
         @Override
         public void fail(Exception e) {
-            proxy.fail(e);
+            part.fail(e);
         }
 
         @Override
         public boolean isFailed() {
-            return proxy.isFailed();
+            return part.isFailed();
         }
 
         @Override
@@ -254,7 +299,7 @@ public class Transaction {
 
         private void readyCheck() {
             if (readyPrepared && readyAction != null)
-                proxy.ready(isCommit
+                part.ready(isCommit
                         -> ref.send(a -> readyAction.accept(isCommit))
                 );
         }
@@ -264,10 +309,16 @@ public class Transaction {
      * Transaction Controller, extended for Actors.
      */
     public static class ActorTCon extends TCon {
-        public <A> void send(IActorRef<A> actorRef, BiConsumer<IPart, A> userAction) {
+        /**
+         * Include participant
+         *
+         * @param actorRef   actor participant
+         * @param userAction update action at actor
+         * @param <A>        actor type
+         */
+        public <A> void addParticipant(IActorRef<A> actorRef, BiConsumer<IPart, A> userAction) {
             Objects.requireNonNull(userAction);
-            IPart p = newPart();
-            final ActorPart<A> part = new ActorPart<>(p, actorRef);
+            final ActorPart<A> part = new ActorPart<>(addParticipant(), actorRef);
             actorRef.send(act -> {
                 try {
                     if (!getState().isFailed()) {
