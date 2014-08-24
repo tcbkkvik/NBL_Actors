@@ -169,7 +169,7 @@ Tips: guava-libraries might be useful, for example with
 'com.google.common.collect.ImmutableList'.
 
 ### Become - change runtime behaviour
-Change behaviour by calling `ActorBase.become`;
+Behaviour can be changed by calling `ActorBase.become`;
 Example:
 ```java
     static class BecomeDemo extends ActorBase<BecomeDemo> {
