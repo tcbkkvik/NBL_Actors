@@ -37,6 +37,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
 
     /**
      * Green-thread using java.lang.Thread
+     *
      * @param isDaemon if {@code true}, marks the thread as a daemon thread
      *                 <p> (The Java Virtual Machine exits when the only
      *                 threads running are all daemon threads.)
@@ -48,6 +49,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
 
     /**
      * Green-thread using java.lang.Thread
+     *
      * @param isDaemon if {@code true}, marks the thread as a daemon thread
      *                 <p> (The Java Virtual Machine exits when the only
      *                 threads running are all daemon threads.)
@@ -64,11 +66,11 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
                 tc
                         .setThread(GreenThr_single.this)
                         .setFactory(myFactory);
-                while (!isStopping) {
+                while (!isStopping || !queue.isEmpty()) {
                     try {
                         Runnable task = queue.take();
                         threadActive.setActive(true);
-                        while (!isStopping && task != null) {
+                        while (task != null) {
                             tc.beforeRun();
                             task.run();
                             task = queue.poll();
@@ -78,6 +80,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
                     }
                     threadActive.setActive(false);
                 }
+                threadActive.setActive(false);
             }
         };
         thr.setDaemon(isDaemon);
@@ -110,6 +113,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     public void shutdownNow() {
         queue.clear();
         shutdown();
+        threadActive.setActive(false);
     }
 
     public void shutdown() {
@@ -118,12 +122,12 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     }
 
     /**
-     * Calls {@code Thread.join} , which uses a loop of {@code this.wait} calls
-     * conditioned on {@code this.isAlive}.
+     * Calls {@link Thread#join(long)}
+     *
      * @param ms the time to wait in milliseconds
-     * @return false if timeout
+     * @return false if timeout ({@code !thr.isAlive()})
      */
-    public boolean await(long ms) throws InterruptedException {
+    public boolean awaitThread(long ms) throws InterruptedException {
         thr.join(ms);
         return !thr.isAlive();
     }

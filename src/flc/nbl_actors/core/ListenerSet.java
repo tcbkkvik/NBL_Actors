@@ -40,23 +40,33 @@ public class ListenerSet<T> implements Consumer<T> {
     }
 
     //Separate add/active list: avoid ConcurrentModificationException
-    private final List<SR<T>> addList = new ArrayList<>(); //only append
+    private final List<SR<T>> listenQueue = new ArrayList<>(); //only append
     private final List<SR<T>> activeList = new LinkedList<>(); //any element may be removed
-    boolean isActive;
+    private final LinkedList<T> eventQueue = new LinkedList<>();
+    private boolean isActive;
 
     public synchronized void addListener(Consumer<T> c) {
-        addList.add(new SR<>(c, (c instanceof IKeep)));
+        (isActive ? listenQueue : activeList)
+                .add(new SR<>(c, (c instanceof IKeep)));
     }
 
     @Override
-    public synchronized void accept(T event) {
+    public synchronized void accept(T aEvent) {
+        eventQueue.add(aEvent);
+        if (isActive)
+            return;
         isActive = true;
-        activeList.addAll(addList);
-        addList.clear();
         try {
-            toListeners(event, activeList);
-        } catch (Exception e) {
-            onError(e);
+            //NB A listener could trigger a new event or addListener(),
+            //leading to a recursive calls, in which
+            //new listeners are queued via listenQueue and events via eventQueue,
+            //to avoid disturbing current event processing.
+            while (!eventQueue.isEmpty()) {
+                activeList.addAll(listenQueue);
+                listenQueue.clear();
+                toListeners(eventQueue.removeFirst(), activeList);
+                //current event processing
+            }
         } finally {
             isActive = false;
         }
@@ -74,7 +84,9 @@ public class ListenerSet<T> implements Consumer<T> {
         while (it.hasNext()) {
             SR<T> e = it.next();
             Consumer<T> c = e.ref.get();
-            if (!e.isMultiShot || c == null) it.remove();
+            if (!e.isMultiShot || c == null) {
+                it.remove();
+            }
             if (c == null) continue;
             try {
                 c.accept(event);

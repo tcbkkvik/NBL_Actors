@@ -37,7 +37,8 @@ public class ThrFactories {
             } finally {
                 factory.close();
             }
-            factory.await(300);
+            if(!factory.await(300))
+                System.out.println("warn ThrFactories runWith.. : timeout");
         }
         return this;
     }

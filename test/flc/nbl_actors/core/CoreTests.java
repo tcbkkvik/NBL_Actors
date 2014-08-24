@@ -94,4 +94,51 @@ public class CoreTests {
         assertEquals(li.no, 2);
         System.out.println("ok");
     }
+
+    @Test
+    public void testListenerSet() {
+        final ListenerSet<Integer> ls = new ListenerSet<>();
+        class Listen implements Consumer<Integer> {
+            int ev, no, ev2, no2;
+
+            @Override
+            public void accept(Integer event) {
+                if (event < 0) {
+                    ev2 = event;
+                    ++no2;
+                } else {
+                    ev = event;
+                    ++no;
+                }
+                log();
+            }
+
+            void log() {
+                System.out.println(" e: " + ev);
+                if (no > 1) return;
+                ls.addListener(e -> System.out.println(" listener2: " + e));
+                ls.accept(-ev);
+            }
+        }
+
+        class ListenK extends Listen implements ListenerSet.IKeep<Integer> {
+            @Override
+            void log() {
+                System.out.println(" eK: " + ev);
+            }
+        }
+
+        Listen lis = new Listen();
+        ListenK lisK = new ListenK();
+        ls.addListener(lis);
+        ls.addListener(lisK);
+
+        final int N = 5;
+        for (int i = 1; i < N; i++) {
+            ls.accept(i);
+            assertEquals(1, lis.no);
+            assertEquals(i, lisK.ev);
+            assertEquals(i, lisK.no);
+        }
+    }
 }

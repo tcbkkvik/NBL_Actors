@@ -42,7 +42,7 @@ public class ActorTests {
         factories = (thrCount, consumer) -> {
             new ThrFactories(consumer)
                     .runWith(new GreenThrFactory_single(thrCount))
-                    .runWith(new GreenThr_single())
+                    .runWith(new GreenThr_single(false))
                     .runWith(new GreenThr_zero())
             ;
         };
@@ -180,50 +180,33 @@ public class ActorTests {
             throws InterruptedException {
         String text = "testActorRef(" + className(threads) + ")";
         log(text + "..");
-        final AtomicInteger responseCount = new AtomicInteger();
-        final IActorRef<ActImpl> ref = new ActorRef<>(threads, new ActImpl());
+        final ActImpl ai = new ActImpl();
+        final IActorRef<ActImpl> ref = new ActorRef<>(threads, ai);
         final int N = 10;
-        //- Concurrent send to same ref:
         for (int n = 0; n < N; ++n) {
-            final IGreenThr thr = threads.newThread();
-            thr.execute(() -> ref.send(a -> {
-                a.action();
-                responseCount.incrementAndGet();
-            }));
+            threads.newThread().execute(
+                    () -> ref.send(ActImpl::action)
+                    //concurrent send,
+                    //sequential receive
+            );
         }
         Thread.sleep(10);
-        AtomicBoolean isShutdownCalled = new AtomicBoolean(false);
         threads.setEmptyListener(() -> {
-            assertEquals(N, responseCount.get());
-            log(" ..empty 1 ok");
-            ref.send(a -> {
-                assertEquals(N, a.callCount.get());
-                log(" .. #calls ok.  setEmptyListener(<shutdown>) ...");
-                threads.setEmptyListener(
-                        () -> {
-                            boolean ok = responseCount.get() == N;
-                            log(" ..empty 2, responseCount ok?: " + ok);
-                            isShutdownCalled.set(true);
-                            threads.shutdown();
-                        });
-            });
+            assertEquals(N, ai.callCount.get());
+            log(" ..empty ok");
         });
-        try {
-            threads.await(3000);
-        } catch (InterruptedException e) {
-            log("testActorRef await timeOut !");
+        System.out.println(" wait..");
+        if (!threads.await(3000)) {
+            log(" testActorRef await timeOut !");
+            fail();
         }
-        if (!isShutdownCalled.get()) {
-            fail("isShutdownCalled = false");
-            //todo GreenThrFactory_single fix?
-        }
-        assertEquals(N, responseCount.get());
-        log("    OK: testActorRef");
+        assertEquals(N, ai.callCount.get());
+        log(" OK: testActorRef");
     }
 
     @Test
     public void testActorRef() throws InterruptedException {
-        final int N = 2;
+        final int N = 1;
         for (int n = 0; n < N; ++n) {
             log(" " + n);
             factories.loop(4, ActorTests::testActorRef);
@@ -270,7 +253,7 @@ public class ActorTests {
         ref.send(RingNode::passOn);
         AtomicBoolean done = new AtomicBoolean(false);
         threads.setEmptyListener(() -> {
-            done.set(true); //NB if called to early => NO latch.countDown()
+            done.set(true); //NB if called too early => NO latch.countDown()
             threads.shutdown();
         });
 //        latch.await();

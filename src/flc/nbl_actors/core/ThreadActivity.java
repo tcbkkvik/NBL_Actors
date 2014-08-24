@@ -50,8 +50,10 @@ public class ThreadActivity {
      * @param listener active listener
      */
     public void setListener(Consumer<Boolean> listener) {
-        listener.accept(isActive.get());
-        this.listener.addListener(listener);
+        synchronized (this.listener) {
+            listener.accept(isActive.get());
+            this.listener.addListener(listener);
+        }
     }
 
     public static class Counts {

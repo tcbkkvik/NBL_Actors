@@ -27,7 +27,7 @@ public class GreenThrFactory_single implements IGreenThrFactory {
     private final ThreadActivity.Counts activeCount = new ThreadActivity.Counts();
 
     /**
-     * Greenthread factory using java.lang.Thread
+     * Green thread factory using java.lang.Thread
      * <p> (isDaemon = true)
      * </p>
      *
@@ -38,7 +38,7 @@ public class GreenThrFactory_single implements IGreenThrFactory {
     }
 
     /**
-     * Greenthread factory using java.lang.Thread
+     * Green thread factory using java.lang.Thread
      * @param totalNThreads Total number of threads started.
      * @param isDaemon if {@code true}, marks the thread as a daemon thread
      *                 <p> (The Java Virtual Machine exits when the only
@@ -97,15 +97,10 @@ public class GreenThrFactory_single implements IGreenThrFactory {
         activeCount.factories.forEach(IGreenThrFactory::shutdownNow);
     }
 
-    /**
-     * Calls {@code Thread.join} on all underlying threads.
-     * A timeout of {@code 0} means to wait forever.
-     * @param ms the time to wait in milliseconds
-     * @return false if timeout
-     */
-    public boolean await(long ms) throws InterruptedException {
-        return activeCount.await0(ms);
-    }
+//    @Override
+//    public boolean await(long ms) throws InterruptedException {
+//        return activeCount.await0(ms);
+//    }
 
     @Override
     public void setActiveListener(final Consumer<Boolean> listener) {

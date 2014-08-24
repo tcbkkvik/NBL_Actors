@@ -71,16 +71,16 @@ public interface IGreenThrFactory extends Closeable {
     /**
      * Set active listener; called when active status changes
      * (with 'true' if at least one thread is active, ie. has more messages).
-     * <pre>
      * Callback sequence:
-     * (1) first called immediately with current state.
-     * (2) then once when state changes.
-     * (3) then discarded, unless the listener is an
+     * <li>1: First called immediately with current state (in callers thread).</li>
+     * <li>2: Then once when state changes.</li>
+     * <li>3: Then discarded, unless the listener is an
      * instance of {@link flc.nbl_actors.core.ListenerSet.IKeep}, which
-     * makes it trigger repeatedly.
-     * </pre>
+     * makes it trigger repeatedly.</li>
+     * NB; The listener may be called from any thread of this factory,
+     * so if it accesses mutable fields, make sure it is tread-safe.
      *
-     * @param listener called when active state changes
+     * @param listener callback; called when active state changes
      */
     void setActiveListener(Consumer<Boolean> listener);
 
@@ -129,7 +129,11 @@ public interface IGreenThrFactory extends Closeable {
      */
     default boolean await(long millis) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        setEmptyListener(latch::countDown);
+        //noinspection CodeBlock2Expr
+        setEmptyListener(() -> {
+            //noinspection Convert2MethodRef
+            latch.countDown();
+        });
         if (millis != 0)
             return latch.await(millis, TimeUnit.MILLISECONDS);
         latch.await();
