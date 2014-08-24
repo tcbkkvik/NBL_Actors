@@ -7,21 +7,11 @@
  */
 package flc.nbl_actors.core;
 
-import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.Consumer;
 
 /**
- * Track thread activity.
- * <p>Example - Listen to multiple factories:
- * </p>
- * <pre>
- * {@code
- *  ThreadActivity.listenTo(factory1, factory2)
- *          .onEmptyShutdown()
- *          .await(0);
- * }
- * </pre>
+ * Track single-thread activity.
  * Date: 08.01.14
  *
  * @author Tor C Bekkvik
@@ -54,99 +44,5 @@ public class ThreadActivity {
             listener.accept(isActive.get());
             this.listener.addListener(listener);
         }
-    }
-
-    public static class Counts {
-        final ActiveCount ac = new ActiveCount();
-        public final List<IGreenThrFactory> factories = new ArrayList<>();
-
-        public Counts() {
-        }
-
-        public Counts(List<IGreenThrFactory> fs) {
-            fs.forEach(f -> {
-                f.setActiveListener(ac.newParticipant());
-                factories.add(f);
-            });
-        }
-
-        public void listenTo(IGreenThrFactory fact) {
-            factories.add(fact);
-            fact.setActiveListener(ac.newParticipant());
-        }
-
-        public void setActiveListener(Consumer<Boolean> al) {
-            ac.setActiveHandler(al);
-        }
-
-        private boolean isShutdownScheduled;
-
-        /**
-         * Calls {@link IGreenThrFactory#shutdown()} when
-         * no more activity.
-         *
-         * @return this
-         */
-        public Counts onEmptyShutdown() {
-            isShutdownScheduled = true;
-            setActiveListener(active -> {
-                if (!active)
-                    factories.forEach(IGreenThrFactory::shutdown);
-            });
-            return this;
-        }
-
-        /**
-         * Waits at most {@code millis} milliseconds for threads to
-         * terminate. A timeout of {@code 0} means to wait forever.*
-         * <p>Calls {@link IGreenThrFactory#await(long)} for each factory.
-         * </p>
-         *
-         * @param millis maximum total time to wait in milliseconds
-         * @return false if timeout
-         * @throws InterruptedException if any thread has interrupted the current thread.
-         *                              or {@link #onEmptyShutdown()} was not called
-         */
-        public boolean await(long millis) throws InterruptedException {
-            if (!isShutdownScheduled)
-                throw new InterruptedException("onEmptyShutdown() was not called");
-            return await0(millis);
-        }
-
-        public boolean await0(long millis) throws InterruptedException {
-            final long t1 = System.currentTimeMillis() + millis;
-            for (IGreenThrFactory f : factories) {
-                boolean ok = f.await(millis);
-                if (!ok)
-                    return false;//timeout
-                if (millis > 0 && (millis = t1 - System.currentTimeMillis()) < 1)
-                    return false;//timeout
-            }
-            return true;
-        }
-    }
-
-    /**
-     * Listen to activity in thread factories.
-     * <p>Calls {@link IGreenThrFactory#setActiveListener} and keeps a list of given factories.
-     * </p>
-     *
-     * @param factories thread factories
-     * @return factories wrapper
-     */
-    public static Counts listenTo(List<IGreenThrFactory> factories) {
-        return new Counts(factories);
-    }
-
-    /**
-     * Listen to activity in thread factories.
-     * <p>Calls {@link #listenTo(java.util.List)}
-     * </p>
-     *
-     * @param factories factories
-     * @return factories wrapper
-     */
-    public static Counts listenTo(IGreenThrFactory... factories) {
-        return new Counts(Arrays.asList(factories));
     }
 }

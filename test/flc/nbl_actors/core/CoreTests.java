@@ -32,7 +32,7 @@ public class CoreTests {
             parts.add(ac.newParticipant());
         AtomicInteger refCount = new AtomicInteger();
         ac.setCountHandler(count -> assertEquals(refCount.get(), (int) count));
-        ac.setActiveHandler(a -> assertEquals(a, refCount.get() > 0));
+        ac.setActiveListener(a -> assertEquals(a, refCount.get() > 0));
         //---
         //increase #active
         for (ActiveCount.Part p : parts) {

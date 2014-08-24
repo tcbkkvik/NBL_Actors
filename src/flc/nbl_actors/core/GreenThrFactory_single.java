@@ -7,6 +7,8 @@
  */
 package flc.nbl_actors.core;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -24,7 +26,8 @@ public class GreenThrFactory_single implements IGreenThrFactory {
     private final int totalNThreads;
     private int index;
     private volatile Consumer<Exception> exceptionHandler = e -> {};
-    private final ThreadActivity.Counts activeCount = new ThreadActivity.Counts();
+    private final ActiveCount ac = new ActiveCount();
+    private final List<IGreenThrFactory> threads = new ArrayList<>();
 
     /**
      * Green thread factory using java.lang.Thread
@@ -56,7 +59,8 @@ public class GreenThrFactory_single implements IGreenThrFactory {
                     exceptionHandler.accept(e);
                 }
             };
-            activeCount.listenTo(thr);
+            threads.add(thr);
+            thr.setActiveListener(ac.newParticipant());
         }
     }
 
@@ -65,14 +69,14 @@ public class GreenThrFactory_single implements IGreenThrFactory {
     }
 
     public void reverseOrder(boolean reversed) {
-        activeCount.factories.forEach(t -> ((GreenThr_single)t).reverseOrder(reversed));
+        threads.forEach(t -> ((GreenThr_single)t).reverseOrder(reversed));
     }
 
     @Override
     public IGreenThr newThread() {
-        synchronized(activeCount) {
+        synchronized(threads) {
             index = (index + 1) % totalNThreads;
-            return activeCount.factories
+            return threads
                     .get(index)
                     .newThread();
         }
@@ -88,23 +92,18 @@ public class GreenThrFactory_single implements IGreenThrFactory {
 
     public void shutdown() {
         onShutdown();
-        activeCount.factories.forEach(IGreenThrFactory::shutdown);
+        threads.forEach(IGreenThrFactory::shutdown);
     }
 
     @Override
     public void shutdownNow() {
         onShutdown();
-        activeCount.factories.forEach(IGreenThrFactory::shutdownNow);
+        threads.forEach(IGreenThrFactory::shutdownNow);
     }
-
-//    @Override
-//    public boolean await(long ms) throws InterruptedException {
-//        return activeCount.await0(ms);
-//    }
 
     @Override
     public void setActiveListener(final Consumer<Boolean> listener) {
-        activeCount.setActiveListener(listener);
+        ac.setActiveListener(listener);
     }
 
 }

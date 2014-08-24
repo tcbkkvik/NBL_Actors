@@ -37,7 +37,7 @@ public class ActiveCount {
     private final ListenerSet<Integer> countHandler = new ListenerSet<>();
     private final ListenerSet<Boolean> activeHandler = new ListenerSet<>();
 
-    public void setActiveHandler(Consumer<Boolean> handler) {
+    public void setActiveListener(Consumer<Boolean> handler) {
         handler.accept(noActive.get() > 0);
         activeHandler.addListener(handler);
     }
