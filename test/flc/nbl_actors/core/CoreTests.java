@@ -110,21 +110,21 @@ public class CoreTests {
                     ev = event;
                     ++no;
                 }
-                log();
+                log(event);
             }
 
-            void log() {
-                System.out.println(" e: " + ev);
+            void log(int event) {
+                System.out.println(" e: " + event);
                 if (no > 1) return;
-                ls.addListener(e -> System.out.println(" listener2: " + e));
+                ls.addListener(e -> System.out.println(" listener2: " + event));
                 ls.accept(-ev);
             }
         }
 
         class ListenK extends Listen implements ListenerSet.IKeep<Integer> {
             @Override
-            void log() {
-                System.out.println(" eK: " + ev);
+            void log(int event) {
+                System.out.println(" eK: " + event);
             }
         }
 

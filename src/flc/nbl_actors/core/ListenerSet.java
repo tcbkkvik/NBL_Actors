@@ -41,18 +41,18 @@ public class ListenerSet<T> implements Consumer<T> {
 
     //Separate add/active list: avoid ConcurrentModificationException
     private final List<SR<T>> listenQueue = new ArrayList<>(); //only append
-    private final List<SR<T>> activeList = new LinkedList<>(); //any element may be removed
-    private final LinkedList<T> eventQueue = new LinkedList<>();
+    private final List<SR<T>> listeners = new LinkedList<>(); //any element may be removed
+    private final Deque<T> eventQueue = new LinkedList<>();
     private boolean isActive;
 
     public synchronized void addListener(Consumer<T> c) {
-        (isActive ? listenQueue : activeList)
+        (isActive ? listenQueue : listeners)
                 .add(new SR<>(c, (c instanceof IKeep)));
     }
 
     @Override
-    public synchronized void accept(T aEvent) {
-        eventQueue.add(aEvent);
+    public synchronized void accept(T event) {
+        eventQueue.add(event);
         if (isActive)
             return;
         isActive = true;
@@ -62,9 +62,9 @@ public class ListenerSet<T> implements Consumer<T> {
             //new listeners are queued via listenQueue and events via eventQueue,
             //to avoid disturbing current event processing.
             while (!eventQueue.isEmpty()) {
-                activeList.addAll(listenQueue);
+                listeners.addAll(listenQueue);
                 listenQueue.clear();
-                toListeners(eventQueue.removeFirst(), activeList);
+                toListeners(eventQueue.removeFirst(), listeners);
                 //current event processing
             }
         } finally {
@@ -79,7 +79,7 @@ public class ListenerSet<T> implements Consumer<T> {
      * @param list  listeners (elements can be removed)
      * @param <T>   event type
      */
-    private static <T> void toListeners(T event, List<SR<T>> list) {
+    private static <T> void toListeners(T event, Iterable<SR<T>> list) {
         Iterator<SR<T>> it = list.iterator();
         while (it.hasNext()) {
             SR<T> e = it.next();
