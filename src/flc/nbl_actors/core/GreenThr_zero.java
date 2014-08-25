@@ -90,12 +90,6 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
         queue.clear();
     }
 
-    @Override
-    public boolean await(long millis) {
-        pump();
-        return true;
-    }
-
     public void close() {
         pump();
         setEmptyListener(this::shutdown);
