@@ -208,6 +208,7 @@ public class Transaction {
         }
 
         private synchronized void partResult(boolean ok) {
+            --noPending;
             switch (state) {
                 case initial:
                 case ready:
@@ -218,7 +219,6 @@ public class Transaction {
                         return;
                     }
             }
-            --noPending;
             readyTrigger();
         }
 
