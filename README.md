@@ -49,21 +49,23 @@ Here is a **mini-tutorial**, covering all essential concepts (working code):
                 .init(factory); //init: binds (a) with a new thread.
 
         /* 3. Send it messages
-            3.1) Send = Basic one-way messaging: */
+              Send = Basic one-way messaging: */
         refA.send(a -> a.increaseX());
         refA.send(A::increaseX); //same effect
 
-        /*  3.2) Call = Messages with callback;
-                 Must itself be called from inside a
-                 green-thread for callback to work:*/
-        factory.newThread().execute(()->
-            refA.call(
-                    A::getX
-                    // getX is called from the thread of refA
+        /* 4. Or, you can use green-threads directly;*/
+        factory.newThread().execute(() ->
 
-                    , x -> System.out.println(" got x: " + x)
-                    // callback; called at my own thread
-            )
+          /* 5. Call = Messages with callback;
+                (Must itself be called from inside a
+                 green-thread or actor)  */
+                refA.call(
+                        A::getX
+                        // getX is called from the thread of refA
+
+                        , x -> System.out.println(" got x: " + x)
+                        // callback; called at my own thread
+                )
         );
     }
 
