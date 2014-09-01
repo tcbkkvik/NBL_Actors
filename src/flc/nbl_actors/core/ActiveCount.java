@@ -58,6 +58,17 @@ public class ActiveCount {
         return noActive.get();
     }
 
+    public ActiveCount listenTo(IGreenThrFactory f) {
+        f.setActiveListener(newParticipant());
+        return this;
+    }
+
+    public ActiveCount listenTo(IGreenThrFactory... fs) {
+        for (IGreenThrFactory f : fs)
+            f.setActiveListener(newParticipant());
+        return this;
+    }
+
     private void signal(int delta) {
         if (delta == 0) return;
         int n0 = noActive.getAndAdd(delta);

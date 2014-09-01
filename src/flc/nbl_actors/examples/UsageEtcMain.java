@@ -263,14 +263,16 @@ public class UsageEtcMain {
                 .init(factory); //init: binds (a) with a new thread.
 
         /* 3. Send it messages
-            3.1) Send = Basic one-way messaging: */
+              Send = Basic one-way messaging: */
         refA.send(a -> a.increaseX());
         refA.send(A::increaseX); //same effect
 
-        /*  3.2) Call = Messages with callback;
-                 Must itself be called from inside a
-                 green-thread for callback to work:*/
-        factory.newThread().execute(()->
+        /* 4. Or, you can use green-threads directly;*/
+        factory.newThread().execute(() ->
+
+        /* 5. Call = Messages with callback;
+                (Must itself be called from inside a
+                 green-thread or actor)  */
                 refA.call(
                         A::getX
                         // getX is called from the thread of refA
@@ -281,8 +283,30 @@ public class UsageEtcMain {
         );
     }
 
+    @SuppressWarnings("CodeBlock2Expr")
+    static void listenToMultipleFactories(IGreenThrFactory f1)
+    {
+        //-- Two thread-factories with some work:
+        IGreenThrFactory f2 = new GreenThr_zero();
+        f1.newThread().execute(() -> {
+            System.out.println(" thr 1");
+        });
+        f2.newThread().execute(() -> {
+            System.out.println(" thr 2");
+        });
+
+        //-- Listen for all tasks to finish:
+        new ActiveCount()
+                .listenTo(f1, f2)
+                .setActiveListener(b -> {
+                    if (!b)
+                        System.out.println(" listenToMultipleFactories .. done");
+                });
+    }
+
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory f = new GreenThrFactory_single(2, false)) {
+            listenToMultipleFactories(f);
             easy_to_learn(f);
             nonBlockingFuture(f);
             new CallChain().demo(f);

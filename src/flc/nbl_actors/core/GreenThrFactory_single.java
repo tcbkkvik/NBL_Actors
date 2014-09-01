@@ -60,7 +60,7 @@ public class GreenThrFactory_single implements IGreenThrFactory {
                 }
             };
             threads.add(thr);
-            thr.setActiveListener(ac.newParticipant());
+            ac.listenTo(thr);
         }
     }
 
