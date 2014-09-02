@@ -78,53 +78,42 @@ public class UsageEtcMain {
 
     @SuppressWarnings("Convert2MethodRef")
     static class Throttle extends ActorBase<Throttle> {
-        static class ReceiveActor {
-            void consume(int val) {
-                log(" got: " + val);
+
+        final Supplier<Integer> pullSource;
+
+        Throttle(Supplier<Integer> pullSource) {
+            this.pullSource = pullSource;
+        }
+
+//        Flow control
+//        Message-queue overflow can in general be avoided by returning feedback-messages to sending actor. The sender can then slow down by either:
+//                1. Blocking until consuming actor is ready.
+//                (best to avoid?)
+//                2. Alternatively, thread could help receiving actor.
+//                (if passive)
+//                3. Rejecting received message.
+//                (vital messages lost?)
+//                4. Message-pulling instead of passive receive.
+
+        public void pullNextMessage() {
+            if (consume(pullSource.get())) {
+                self().send(s -> s.pullNextMessage());
             }
         }
 
-        final Supplier<Integer> pullSource;
-        final IActorRef<ReceiveActor> destination;
-
-        Throttle(Supplier<Integer> pullSource, IActorRef<ReceiveActor> destination) {
-            this.pullSource = pullSource;
-            this.destination = destination;
-        }
-
-        //A general way to avoid message queue overflow,
-        //is via reply-messages to sending actor.
-        //The sending actor can then slow down by:
-        //
-        //    - Blocking until consuming actor is ready. (avoid blocking)
-        //    - Rejecting received message. (important message lost?)
-        //    - Pulling messages instead of passive receive.
-        //Example:
-        public void pullNextMessage() {
-            Integer val = pullSource.get();
-            if (val == null) return; //stop
-            destination.send(d -> {
-                d.consume(val);
-                // Feedback "loop" here: (ACK signal)
-                self().send(s -> s.pullNextMessage());
-            });
+        private boolean consume(Integer value) {
+            log(" got: " + value);
+            return value > 0;
         }
 
         static void demo(IGreenThrFactory factory, int max)
                 throws InterruptedException {
             log("Throttle..");
-            IActorRef<ReceiveActor> out = new ActorRef<>(factory, new ReceiveActor());
-            final AtomicInteger count = new AtomicInteger();
-            Supplier<Integer> in = () -> {
-                int no = count.incrementAndGet();
-                return (Integer) (no < max ? no : null);
-            };
-            IActorRef<Throttle> ref = new Throttle(in, out).init(factory);
-            ref.send(s -> {
-                s.pullNextMessage();//send at least 1 "token", staring loop
-                s.pullNextMessage();//may send more to "fill pipe"..
-                s.pullNextMessage();
-            });
+            final AtomicInteger count = new AtomicInteger(max);
+            IActorRef<Throttle> ref;
+            ref = new Throttle(() -> count.decrementAndGet())
+                    .init(factory);
+            ref.send(s -> s.pullNextMessage());
             CountDownLatch latch = new CountDownLatch(1);
             factory.setEmptyListener(() -> latch.countDown());
             latch.await();
@@ -310,6 +299,7 @@ public class UsageEtcMain {
             easy_to_learn(f);
             nonBlockingFuture(f);
             new CallChain().demo(f);
+            f.await(1000);
             Throttle.demo(f, 7);
             cancelOp(f);
             minimumExample(f);

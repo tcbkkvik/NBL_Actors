@@ -7,7 +7,7 @@ concurrency API, based on java lambdas from start..
 An actor can be seen as an extension of the Object-Oriented (OO) model:
 While the OO-model is good at protecting private fields and methods, its default
 multi-threading synchronization is often hard to get right.
-In contrast, even a minimal actor offers built-in concurrency protection
+In contrast, even a minimal actor has (or should have) built-in concurrency protection
 through message based concurrency.
 
 Taking full advantage of lambdas from beginning, this API is a compact yet flexible implementation
@@ -287,13 +287,8 @@ Example, message-pulling:
 ```java
         //User defined method inside actor:
         public void pullNextMessage() {
-            Integer val = pullSource.get();
-            if (val == null) return; //stop
-            destination.send(d -> {
-                d.consume(val);
-                // Feedback "loop" here:
+            if (consume(pullSource.get()))
                 self().send(s -> s.pullNextMessage());
-            });
         }
 ```
 
