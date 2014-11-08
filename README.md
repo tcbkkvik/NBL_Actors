@@ -1,7 +1,7 @@
 Non-Blocking Lambda-based Actors
 ================================
 
-A lightweight but powerful [actor](http://en.wikipedia.org/wiki/Actor_model)
+A lightweight but flexible [actor](http://en.wikipedia.org/wiki/Actor_model)
 concurrency API, based on java lambdas from start..
 
 An actor can be seen as an extension of the Object-Oriented (OO) model:
@@ -320,3 +320,13 @@ serializing `IActorRef.send(java.util.function.Consumer<A> msg)`)
 ## More documentation..
 * For more examples & code: check under src/...
 * Java docs; Download ZIP file; browse doc/index.html
+
+
+## Inspiration
+* "Simplicity is the ultimate sophistication". Leonardo da Vinci
+* "Fools ignore complexity; pragmatists suffer it; experts avoid it; geniuses remove it." Alan Perlis (Turing Award, ALGOL)
+* "The competent programmer is fully aware of the strictly limited size of his own skull." Edsger Dijkstra (Turing Award)
+* "So much complexity in software comes from trying to make one thing do two things." Ryan Singer
+* "The cheapest, fastest, and most reliable components are those that aren't there." Gordon Bell
+* Unix Philosophy - http://en.wikipedia.org/wiki/Unix_philosophy
+* How to Design a Good API & Why it Matters - http://www.infoq.com/presentations/effective-api-design
