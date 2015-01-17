@@ -55,7 +55,7 @@ public interface IGreenThrFactory extends Closeable {
 
     /**
      * Set message relay. Intended to capture send/receive events
-     * for message tracing & debugging. Default implementation does nothing. Implementations
+     * for message tracing/debugging. Default implementation does nothing. Implementations
      * can call it from {@link flc.nbl_actors.core.IGreenThr#execute(Runnable)} in
      * generated green-threads.
      *

@@ -9,7 +9,7 @@ package flc.nbl_actors.experimental.log;
 
 /**
  * Message event.
- * Date 16.01.2015.
+ * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik
  */

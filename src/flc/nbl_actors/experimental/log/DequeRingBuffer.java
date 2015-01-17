@@ -13,7 +13,7 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 
 /**
- * Ring Buffer based on {@link java.util.ArrayDeque}.
+ * Ring Buffer based on java.util.ArrayDeque.
  * When full, oldest elements are removed.
  * <p>Date: 17.01.2015
  * </p>
@@ -49,7 +49,7 @@ public class DequeRingBuffer<T> {
     }
 
     /**
-     * Retrieves and removes the head of the queue (ie. oldest = first element).
+     * Retrieves and removes the head of the queue (= oldest = first element).
      *
      * @return first element, or {@code null} if empty
      */

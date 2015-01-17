@@ -13,15 +13,31 @@ import java.util.function.Supplier;
 
 /**
  * Message event: Sent
- * Date 16.01.2015.
+ * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik
  */
 public class MsgSent implements IMsgEvent {
-    public final MsgId id, idParent; //parent: enables message trace-back
-    public final String source; //source code/line info (from stack trace)
-    public final Supplier<String> userInfo; //optional user-state information
-    public final IGreenThr toThr; //target green-thread
+    /**
+     * Message Id
+     */
+    public final MsgId id;
+    /**
+     * Parent message Id. Identifies previous message in chain of events.
+     */
+    public final MsgId idParent;
+    /**
+     * source code/line info (from stack trace)
+     */
+    public final String source;
+    /**
+     * optional user-state information
+     */
+    public final Supplier<String> userInfo;
+    /**
+     * target green-thread
+     */
+    public final IGreenThr toThr;
 
     public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, String source, IGreenThr to) {
         this.id = id;

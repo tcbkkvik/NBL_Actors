@@ -11,7 +11,7 @@ import java.util.function.Consumer;
 
 /**
  * Message listener factory
- * Date 16.01.2015.
+ * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik
  */
