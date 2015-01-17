@@ -80,7 +80,7 @@ public class ActorRef2<A> extends ActorRef<A> {
             try {
                 msg.accept(getImpl());
             } catch (RuntimeException ex) {
-                super.exceptHd.accept(ex);
+                exceptHd.accept(ex);
             }
             currRef.set(null);
         });
