@@ -54,6 +54,17 @@ public interface IGreenThrFactory extends Closeable {
     IGreenThr newThread();
 
     /**
+     * Set message relay. Intended to capture send/receive events
+     * for message tracing & debugging. Default implementation does nothing. Implementations
+     * can call it from {@link flc.nbl_actors.core.IGreenThr#execute(Runnable)} in
+     * generated green-threads.
+     *
+     * @param msgRelay relay
+     */
+    default void setMessageRelay(IMessageRelay msgRelay) {
+    }
+
+    /**
      * Set empty listener, called when all associated threads have
      * empty message queues (called immediately if already inactive).
      * Default implementation is based on {@link #setActiveListener(Consumer)},

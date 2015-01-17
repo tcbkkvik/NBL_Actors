@@ -62,13 +62,7 @@ public class ActorRef<A> implements IActorRef<A> {
 
     @Override
     public void send(final Consumer<A> msg) {
-        thr.execute(() -> {
-            try {
-                msg.accept(getImpl());
-            } catch (RuntimeException ex) {
-                exceptHd.accept(ex);
-            }
-        });
+        thr.execute(new ActorMessage<>(msg, this));
     }
 
     /**

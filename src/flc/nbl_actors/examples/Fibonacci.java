@@ -8,6 +8,7 @@
 package flc.nbl_actors.examples;
 
 import flc.nbl_actors.core.*;
+import flc.nbl_actors.experimental.log.*;
 
 import java.math.BigInteger;
 import java.util.function.Function;
@@ -20,6 +21,7 @@ import java.util.function.Function;
 public class Fibonacci extends ActorBase<Fibonacci> {
 
     public void fib(BigInteger a, BigInteger b, Function<BigInteger, Boolean> out) {
+        MessageRelay.setTraceInfo(a.toString());
         if (out.apply(a)) //output
             self().send(s -> s.fib(b, a.add(b), out));
     }
@@ -36,7 +38,11 @@ public class Fibonacci extends ActorBase<Fibonacci> {
     public static void main(String[] args) {
         final int count = 15;
         System.out.println("Fibonacci numbers; first " + count);
-        run(new GreenThr_zero(), new Function<BigInteger, Boolean>() {
+        GreenThr_zero thr = new GreenThr_zero();
+        //- How to log message trace..
+        MsgListenerFactoryRingBuf trace = new MsgListenerFactoryRingBuf(100, null);
+        thr.setMessageRelay(trace.makeMessageRelay());
+        run(thr, new Function<BigInteger, Boolean>() {
             int no;
 
             @Override
@@ -45,6 +51,12 @@ public class Fibonacci extends ActorBase<Fibonacci> {
                 return ++no < count;
             }
         });
+        trace.dump(m -> System.out.println(m.toString()));
+        System.out.println("Trace-back from last message:");
+        int no = 0;
+        for (IMsgEvent rec : trace.getMessageTrace(trace.getLastEvent())) {
+            System.out.println(++no + " " + rec.toString());
+        }
         System.out.println();
     }
 }

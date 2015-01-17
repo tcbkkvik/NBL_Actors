@@ -25,12 +25,18 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     private boolean isStop; //true if not accepting new messages in execute()
     private boolean isStack; //LIFO
     private final ThreadActivity threadActive = new ThreadActivity();
+    private IMessageRelay messageRelay = (r, t) -> r;
 
     /**
      * Init with default order = FIFO (first-in-first-out)
      */
     public GreenThr_zero() {
         ThreadContext.get().setFactory(this);
+    }
+
+    @Override
+    public void setMessageRelay(IMessageRelay relay) {
+        messageRelay = relay == null ? (r, t) -> r : relay;
     }
 
     public void reverseOrder(boolean reversed) {
@@ -69,8 +75,9 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     }
 
     @Override
-    public void execute(Runnable r) {
+    public void execute(Runnable r0) {
         if (isStop) return;
+        Runnable r = messageRelay.intercept(r0, this);
         if (isStack)
             queue.addFirst(r);
         else
