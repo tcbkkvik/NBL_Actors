@@ -36,12 +36,12 @@ public class MsgSent implements IMsgEvent {
         return id;
     }
 
-    public String usrInfo() {
+    private String userInfoString() {
         return userInfo == null ? "" : " : " + userInfo.get();
     }
 
     @Override
     public String toString() {
-        return "+sent " + id + " < " + idParent + " @" + source + usrInfo();
+        return "+sent " + id + " < " + idParent + " @" + source + userInfoString();
     }
 }

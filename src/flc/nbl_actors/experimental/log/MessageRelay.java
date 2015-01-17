@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  */
 public class MessageRelay implements IMessageRelay {
 
-    private static final ThreadLocal<TContext> local
+    private static final ThreadLocal<TContext> threadContext
             = ThreadLocal.withInitial(TContext::new);
     private final IMsgListenerFactory listenerFactory;
 
@@ -48,18 +48,8 @@ public class MessageRelay implements IMessageRelay {
      *
      * @param info Info string (may be consumed later)
      */
-    public static void setUserInfo(Supplier<String> info) {
-        local.get().setUserInfo(info);
-    }
-
-    /**
-     * Set trace info.
-     * See {@link #setUserInfo(java.util.function.Supplier)}
-     *
-     * @param str Info string
-     */
-    public static void setTraceInfo(String str) {
-        setUserInfo(() -> str);
+    public static void setTraceInfo(Supplier<String> info) {
+        threadContext.get().setUserInfo(info);
     }
 
     private String stackLine(int lev) {
@@ -79,7 +69,7 @@ public class MessageRelay implements IMessageRelay {
     }
 
     private TContext context() {
-        TContext c = local.get();
+        TContext c = threadContext.get();
         if (c.listener == null) {
             c.listener = listenerFactory.forkListener();
         }
@@ -111,7 +101,7 @@ public class MessageRelay implements IMessageRelay {
     public static class TContext {
         private static AtomicInteger currThrNo = new AtomicInteger();
         private final int thrNo = currThrNo.incrementAndGet();
-        private int msgNo;
+        private int msgNo; //starts at 1 (0 is undefined)
         private MsgId parentId;
         private Supplier<String> userInfo;
         private Consumer<IMsgEvent> listener;
@@ -125,7 +115,7 @@ public class MessageRelay implements IMessageRelay {
         }
 
         public MsgId nextId() {
-            return new MsgId(thrNo, msgNo++);
+            return new MsgId(thrNo, ++msgNo);
         }
 
         public MsgId getParentId() {

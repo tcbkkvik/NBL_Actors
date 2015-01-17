@@ -14,19 +14,19 @@ package flc.nbl_actors.experimental.log;
  * @author Tor C Bekkvik
  */
 public class MsgReceived implements IMsgEvent {
-    final MsgSent sendEvent;
+    public final MsgSent sent;
 
     public MsgReceived(MsgSent sent) {
-        this.sendEvent = sent;
+        this.sent = sent;
     }
 
     @Override
     public MsgId id() {
-        return sendEvent.id;
+        return sent.id;
     }
 
     @Override
     public String toString() {
-        return " received " + sendEvent.id;
+        return " received " + sent.id;
     }
 }

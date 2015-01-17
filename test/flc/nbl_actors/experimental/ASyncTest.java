@@ -8,6 +8,7 @@
 package flc.nbl_actors.experimental;
 
 import flc.nbl_actors.core.*;
+import flc.nbl_actors.experimental.log.DequeRingBuffer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -187,7 +188,17 @@ public class ASyncTest {
         assertEquals(N, count.get());
     }
 
-
+    @Test
+    public void testDequeRingBuffer() {
+        DequeRingBuffer<Integer> buf = new DequeRingBuffer<Integer>()
+                .setMaxBufSize(3);
+        buf.add(1);
+        int val = buf.poll();
+        assertEquals(1, val);
+        buf.add(2);
+        assertEquals(2, (int) buf.poll());
+        //to do?
+    }
 
     @Test
     public void testFactory() throws Exception {

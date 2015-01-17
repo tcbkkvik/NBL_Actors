@@ -18,11 +18,14 @@ public interface IMessageRelay {
 
     /**
      * Intercept runnable message.
+     * To be called when message is sent. The returned (possibly instrumented)
+     * message should be added to the thread-queue instead of the original message.
+     * The message has been received when {@link Runnable#run()} is called.
      *
      * @param msg    original message
      * @param thread green-thread to execute the message
      * @return original message, optionally wrapped in another
-     * Runnable for listening purposes.
+     * Runnable for listening purposes. (eg. message tracing & debugging)
      */
     Runnable intercept(Runnable msg, IGreenThr thread);
 }

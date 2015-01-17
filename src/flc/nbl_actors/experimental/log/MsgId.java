@@ -14,8 +14,8 @@ package flc.nbl_actors.experimental.log;
  * @author Tor C Bekkvik
  */
 public class MsgId {
-    final int threadNo; //unique real thread number
-    final int msgNo; //unique per real thread
+    public final int threadNo; //unique real thread number
+    public final int msgNo; //unique per real thread
 
     /**
      * @param threadNo thread number

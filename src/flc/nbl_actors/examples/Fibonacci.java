@@ -21,7 +21,7 @@ import java.util.function.Function;
 public class Fibonacci extends ActorBase<Fibonacci> {
 
     public void fib(BigInteger a, BigInteger b, Function<BigInteger, Boolean> out) {
-        MessageRelay.setTraceInfo(a.toString());
+        MessageRelay.setTraceInfo(a::toString);
         if (out.apply(a)) //output
             self().send(s -> s.fib(b, a.add(b), out));
     }
@@ -41,7 +41,7 @@ public class Fibonacci extends ActorBase<Fibonacci> {
         GreenThr_zero thr = new GreenThr_zero();
         //- How to log message trace..
         MsgListenerFactoryRingBuf trace = new MsgListenerFactoryRingBuf(100, null);
-        thr.setMessageRelay(trace.makeMessageRelay());
+        thr.setMessageRelay(trace.newMessageRelay());
         run(thr, new Function<BigInteger, Boolean>() {
             int no;
 

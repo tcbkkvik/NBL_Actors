@@ -21,7 +21,7 @@ import java.util.function.Consumer;
  */
 public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<IMsgEvent> {
 
-    private final RingBuffer<IMsgEvent> ring = new RingBuffer<>();
+    private final DequeRingBuffer<IMsgEvent> ring = new DequeRingBuffer<>();
     private final Consumer<IMsgEvent> logChain;
 
     /**
@@ -33,7 +33,7 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         logChain = chain;
     }
 
-    public MessageRelay makeMessageRelay() {
+    public MessageRelay newMessageRelay() {
         return new MessageRelay(this);
     }
 
@@ -64,7 +64,7 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
      * @return last event.
      */
     public IMsgEvent getLastEvent() {
-        return ring.lastRecord();
+        return ring.pollLast();
     }
 
     /**
@@ -79,13 +79,13 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         MsgSent sent;
         if (last instanceof MsgReceived) {
             MsgReceived rc = (MsgReceived) last;
-            sent = rc.sendEvent;
+            sent = rc.sent;
         } else {
             sent = (MsgSent) last;
         }
         list.add(sent);
         synchronized (ring) {
-            Iterator<IMsgEvent> it = ring.buffer.descendingIterator();
+            Iterator<IMsgEvent> it = ring.descendingIterator();
             MsgId prev = sent.idParent;
             while (it.hasNext()) {
                 IMsgEvent rec = it.next();
@@ -101,52 +101,5 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         return list;
     }
 
-    static class RingBuffer<T> {
-        private final Deque<T> buffer = new ArrayDeque<>();
-        private int maxBufSize = 100;
-
-        /**
-         * set max buffer size
-         *
-         * @param maxBufSize max size. size=0 means unlimited
-         * @return this
-         */
-        public synchronized RingBuffer<T> setMaxBufSize(int maxBufSize) {
-            this.maxBufSize = maxBufSize;
-            return this;
-        }
-
-        /**
-         * Append to ring buffer
-         *
-         * @param record item added
-         */
-        public synchronized void add(T record) {
-            buffer.add(record);
-            if (maxBufSize > 0)
-                while (buffer.size() > maxBufSize) {
-                    buffer.poll();
-                }
-        }
-
-        /**
-         * Get most recently added element from buffer
-         *
-         * @return element
-         */
-        public synchronized T lastRecord() {
-            return buffer.isEmpty() ? null : buffer.getLast();
-        }
-
-        /**
-         * Dump buffer to consumer
-         *
-         * @param to consumer
-         */
-        public synchronized void dump(Consumer<T> to) {
-            for (T rec : buffer)
-                to.accept(rec);
-        }
-    }
     //todo unit tests
 }

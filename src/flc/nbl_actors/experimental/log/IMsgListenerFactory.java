@@ -17,10 +17,10 @@ import java.util.function.Consumer;
  */
 public interface IMsgListenerFactory {
     /**
-     * Get next listener. Intended to ba called once
+     * Get next listener. Intended to be called once
      * from each event-producing thread.
      *
-     * @return A logger
+     * @return Event consumer
      */
     Consumer<IMsgEvent> forkListener();
 }
