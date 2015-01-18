@@ -68,6 +68,11 @@ public class GreenThrFactory_single implements IGreenThrFactory {
         exceptionHandler = Objects.requireNonNull(handler);
     }
 
+    @Override
+    public void setMessageRelay(final IMessageRelay relay) {
+        threads.forEach(f -> f.setMessageRelay(relay));
+    }
+
     public void reverseOrder(boolean reversed) {
         threads.forEach(t -> ((GreenThr_single)t).reverseOrder(reversed));
     }

@@ -41,7 +41,7 @@ public class Fibonacci extends ActorBase<Fibonacci> {
         GreenThr_zero thr = new GreenThr_zero();
         //- How to log message trace..
         MsgListenerFactoryRingBuf trace = new MsgListenerFactoryRingBuf(100, null);
-        thr.setMessageRelay(trace.newMessageRelay());
+        thr.setMessageRelay(new MessageRelay(trace));
         run(thr, new Function<BigInteger, Boolean>() {
             int no;
 
@@ -51,12 +51,12 @@ public class Fibonacci extends ActorBase<Fibonacci> {
                 return ++no < count;
             }
         });
+        System.out.println("\nDump:");
         trace.dump(m -> System.out.println(m.toString()));
-        System.out.println("Trace-back from last message:");
+        System.out.println("\nTrace-back from last message:");
         int no = 0;
         for (IMsgEvent rec : trace.getMessageTrace(trace.getLastEvent())) {
-            System.out.println(++no + " " + rec.toString());
+            System.out.println(" " + ++no + " " + rec.toString());
         }
-        System.out.println();
     }
 }

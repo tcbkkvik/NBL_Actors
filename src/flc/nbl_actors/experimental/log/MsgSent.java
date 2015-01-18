@@ -22,14 +22,17 @@ public class MsgSent implements IMsgEvent {
      * Message Id
      */
     public final MsgId id;
+
     /**
      * Parent message Id. Identifies previous message in chain of events.
      */
     public final MsgId idParent;
+
     /**
-     * source code/line info (from stack trace)
+     * source code/line info
      */
-    public final String source;
+    public final StackTraceElement source;
+
     /**
      * optional user-state information
      */
@@ -39,7 +42,7 @@ public class MsgSent implements IMsgEvent {
      */
     public final IGreenThr toThr;
 
-    public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, String source, IGreenThr to) {
+    public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to) {
         this.id = id;
         this.idParent = idParent;
         this.source = source;
@@ -58,6 +61,6 @@ public class MsgSent implements IMsgEvent {
 
     @Override
     public String toString() {
-        return "+sent " + id + " < " + idParent + " @" + source + userInfoString();
+        return " sent[" + id + "]" + idParent + " at " + source + userInfoString();
     }
 }

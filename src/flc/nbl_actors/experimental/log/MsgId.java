@@ -47,6 +47,6 @@ public class MsgId {
 
     @Override
     public String toString() {
-        return threadNo + ":" + msgNo;
+        return threadNo + "." + msgNo;
     }
 }

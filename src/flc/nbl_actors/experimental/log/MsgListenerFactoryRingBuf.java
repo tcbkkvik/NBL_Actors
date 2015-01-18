@@ -33,10 +33,6 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         logChain = chain;
     }
 
-    public MessageRelay newMessageRelay() {
-        return new MessageRelay(this);
-    }
-
     @Override
     public void accept(IMsgEvent event) {
         if (logChain != null)

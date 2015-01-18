@@ -7,8 +7,7 @@
  */
 package flc.nbl_actors.experimental.log;
 
-import flc.nbl_actors.core.IGreenThr;
-import flc.nbl_actors.core.IMessageRelay;
+import flc.nbl_actors.core.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -34,17 +33,16 @@ public class MessageRelay implements IMessageRelay {
      *                Enables parallel event logging.
      *                The generator must return either
      *                (i) a single synchronized listener instance, or
-     *                (ii) multiple listener, where events later normally
-     *                gets merged for further processing.
+     *                (ii) multiple listeners (data may be merged later).
      */
     public MessageRelay(IMsgListenerFactory factory) {
         listenerFactory = factory;
     }
 
     /**
-     * Set user-defined trace information, to be stored in a ThreadLocal context.
-     * It is later retrieved in {@link #intercept(Runnable, flc.nbl_actors.core.IGreenThr)},
-     * where it gets logged as part of a "message sent" event.
+     * Add user-defined trace information, via a ThreadLocal context, to message log.
+     * Used when {@link IGreenThrFactory#setMessageRelay(flc.nbl_actors.core.IMessageRelay)}
+     * is set with an instance of this class ({@link MessageRelay})
      *
      * @param info Info string (may be consumed later)
      */
@@ -52,20 +50,18 @@ public class MessageRelay implements IMessageRelay {
         threadContext.get().setUserInfo(info);
     }
 
-    private String stackLine(int lev) {
-        StringBuilder sb = new StringBuilder(" ");
+    private StackTraceElement stackElement(int lev) {
         final String coreP = "flc.nbl_actors.core";
         int no = 0;
-        Exception ex = new Exception("");
+        Throwable ex = new Throwable();
 //                ex.printStackTrace();
         StackTraceElement[] trace = ex.getStackTrace();
         for (StackTraceElement se : trace) {
             if (++no >= lev && !se.getClassName().startsWith(coreP)) {
-                sb.append(se.toString());
-                break;
+                return se;
             }
         }
-        return sb.toString();
+        return null;
     }
 
     private TContext context() {
@@ -81,10 +77,10 @@ public class MessageRelay implements IMessageRelay {
         TContext ctx = context();
 //        if (msg instanceof ActorMessage) {
 //            ActorMessage actorMsg = (ActorMessage) msg;
-//            //todo this is an actor; log extra info?
+//            //todo this is an actor; log extra info? (actor#, greenThr#)
 //        }
         final MsgSent sendEvent = new MsgSent(
-                ctx.nextId(), ctx.getParentId(), ctx.getUserInfo(), stackLine(3), thread);
+                ctx.nextId(), ctx.getParentId(), ctx.getUserInfo(), stackElement(3), thread);
         ctx.setUserInfo(null);
         ctx.listener.accept(sendEvent);
         return () -> {
