@@ -55,9 +55,10 @@ public interface IGreenThrFactory extends Closeable {
 
     /**
      * Set message relay. Intended to capture send/receive events
-     * for message tracing/debugging. Default implementation does nothing. Implementations
-     * can call it from {@link flc.nbl_actors.core.IGreenThr#execute(Runnable)} in
-     * generated green-threads.
+     * for message tracing/debugging. Default implementation does nothing.
+     * Standard {@link #newThread} implementations should produce
+     * threads that calls {@link IMessageRelay#intercept(Runnable, IGreenThr)}
+     * from {@link IGreenThr#execute(Runnable)}.
      *
      * @param msgRelay relay
      */
@@ -86,7 +87,7 @@ public interface IGreenThrFactory extends Closeable {
      * <pre>
      * 1: First called immediately with current state (in callers thread).
      * 2: Then once when state changes.
-     * 3: Then discarded, unless the listener is an instance of {@link flc.nbl_actors.core.ListenerSet.IKeep},
+     * 3: Then discarded, unless the listener is an instance of {@link ListenerSet.IKeep},
      *    which makes it trigger repeatedly.
      * </pre>
      * NB; The listener may be called from any thread of this factory,
