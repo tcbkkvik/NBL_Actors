@@ -22,15 +22,33 @@ import java.util.function.Consumer;
 public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<IMsgEvent> {
 
     private final DequeRingBuffer<IMsgEvent> ring = new DequeRingBuffer<>();
-    private final Consumer<IMsgEvent> logChain;
+    private Consumer<IMsgEvent> logChain;
 
     /**
-     * @param maxRingSize Max #events stored in ring-buffer
-     * @param chain       Next in logger chain, or null.
+     * @param maxSize  Max #events stored in ring-buffer
+     * @param logChain Next in logger chain, or null.
      */
-    public MsgListenerFactoryRingBuf(int maxRingSize, Consumer<IMsgEvent> chain) {
-        ring.setMaxBufSize(maxRingSize);
-        logChain = chain;
+    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> logChain) {
+        ring.setMaxBufSize(maxSize);
+        this.logChain = logChain;
+    }
+
+    /**
+     * Set max ring buffer size
+     *
+     * @param maxSize max size. size=0 means unlimited
+     */
+    public void setMaxBufSize(int maxSize) {
+        ring.setMaxBufSize(maxSize);
+    }
+
+    /**
+     * Set next event consumer in log-chain
+     *
+     * @param logChain event consumer
+     */
+    public void setLogChain(Consumer<IMsgEvent> logChain) {
+        this.logChain = logChain;
     }
 
     @Override
@@ -55,12 +73,12 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
     }
 
     /**
-     * Get last (newest) event from ring-buffer.
+     * Retrieves, but does not remove, the last element (most recently added)
      *
-     * @return last event.
+     * @return last event, or null if buffer is empty
      */
-    public IMsgEvent getLastEvent() {
-        return ring.pollLast();
+    public IMsgEvent peekLast() {
+        return ring.peekLast();
     }
 
     /**

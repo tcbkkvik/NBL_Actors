@@ -34,20 +34,20 @@ public class MsgSent implements IMsgEvent {
     public final StackTraceElement source;
 
     /**
-     * optional user-state information
+     * optional user-supplied information
      */
     public final Supplier<String> userInfo;
     /**
      * target green-thread
      */
-    public final IGreenThr toThr;
+    public final IGreenThr targetThread;
 
     public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to) {
         this.id = id;
         this.idParent = idParent;
         this.source = source;
         this.userInfo = userInfo;
-        this.toThr = to;
+        this.targetThread = to;
     }
 
     @Override

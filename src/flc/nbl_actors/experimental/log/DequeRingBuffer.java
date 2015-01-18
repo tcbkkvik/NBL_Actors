@@ -58,12 +58,12 @@ public class DequeRingBuffer<T> {
     }
 
     /**
-     * Remove and get most recently added element (= last).
+     * Retrieves, but does not remove, the last element, or returns null if empty.
      *
-     * @return last element, or null if empty buffer
+     * @return last element, or null if empty
      */
-    public synchronized T pollLast() {
-        return buffer.pollLast();
+    public synchronized T peekLast() {
+        return buffer.peekLast();
     }
 
     /**

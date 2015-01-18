@@ -15,15 +15,15 @@ package flc.nbl_actors.experimental.log;
  */
 public class MsgId {
     public final int threadNo; //unique real thread number
-    public final int msgNo; //unique per real thread
+    public final int messageNo; //unique per thread
 
     /**
      * @param threadNo thread number
-     * @param msgNo    message number
+     * @param messageNo    message number
      */
-    public MsgId(int threadNo, int msgNo) {
+    public MsgId(int threadNo, int messageNo) {
         this.threadNo = threadNo;
-        this.msgNo = msgNo;
+        this.messageNo = messageNo;
     }
 
     @SuppressWarnings("RedundantIfStatement")
@@ -34,7 +34,7 @@ public class MsgId {
 
         MsgId msgId = (MsgId) o;
 
-        if (msgNo != msgId.msgNo) return false;
+        if (messageNo != msgId.messageNo) return false;
         if (threadNo != msgId.threadNo) return false;
 
         return true;
@@ -42,11 +42,11 @@ public class MsgId {
 
     @Override
     public int hashCode() {
-        return msgNo;
+        return messageNo;
     }
 
     @Override
     public String toString() {
-        return threadNo + "." + msgNo;
+        return threadNo + "." + messageNo;
     }
 }

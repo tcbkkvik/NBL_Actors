@@ -50,6 +50,10 @@ public class MessageRelay implements IMessageRelay {
         threadContext.get().setUserInfo(info);
     }
 
+    public static void setTraceInfo(String info) {
+        threadContext.get().setUserInfo(() -> info);
+    }
+
     private StackTraceElement stackElement(int lev) {
         final String coreP = "flc.nbl_actors.core";
         int no = 0;
