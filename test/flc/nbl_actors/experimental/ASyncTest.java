@@ -8,10 +8,11 @@
 package flc.nbl_actors.experimental;
 
 import flc.nbl_actors.core.*;
-import flc.nbl_actors.experimental.log.DequeRingBuffer;
+import flc.nbl_actors.experimental.log.*;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -19,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -189,18 +191,6 @@ public class ASyncTest {
     }
 
     @Test
-    public void testDequeRingBuffer() {
-        DequeRingBuffer<Integer> buf = new DequeRingBuffer<Integer>()
-                .setMaxBufSize(3);
-        buf.add(1);
-        int val = buf.poll();
-        assertEquals(1, val);
-        buf.add(2);
-        assertEquals(2, (int) buf.poll());
-        //to do?
-    }
-
-    @Test
     public void testFactory() throws Exception {
         try (IGreenThrFactory f = new GreenThrFactory_Q(1)) {
             tst2(f);
@@ -209,4 +199,91 @@ public class ASyncTest {
         tst(new GreenThrFactory_Q(Executors.newFixedThreadPool(2), 2));
     }
 
+    @Test
+    public void testMessageRelay_RingBuf() throws InterruptedException {
+        final MsgListenerFactoryRingBuf buffer = new MsgListenerFactoryRingBuf(100, null);
+        final ThreadLocal<IMsgEvent> lastEvent = new ThreadLocal<>();
+
+        class Info implements Supplier<String> {
+            final String s;
+            final int depth;
+
+            public Info(String s, int depth) {
+                this.s = s;
+                this.depth = depth;
+            }
+
+            @Override
+            public String get() {
+                return s + depth;
+            }
+
+            void assertSent(IMsgEvent event, IGreenThr toThr) {
+                MsgSent s = (MsgSent) event;
+                assertTrue(s.userInfo == this);
+                assertTrue(s.targetThread == toThr);
+            }
+
+            void assertReceived(IMsgEvent event) {
+                MsgSent s = ((MsgReceived) event).sent;
+                assertTrue(s.userInfo == this);
+            }
+        }
+
+        class TraceCheck implements Consumer<IMsgEvent> {
+            @Override
+            public void accept(IMsgEvent rec) {
+                lastEvent.set(rec);
+                if (rec instanceof MsgSent) {
+                    System.out.println("Message trace:");
+                    int depth = 0;
+                    for (IMsgEvent event : buffer.getMessageTrace(rec)) {
+                        System.out.println("   * " + event);
+                        ++depth;
+                    }
+                    MsgSent sent = (MsgSent) rec;
+                    if (sent.userInfo instanceof Info) {
+                        Info info = (Info) sent.userInfo;
+                        assertEquals("getMessageTrace;depth", depth, info.depth);
+                    }
+                }
+            }
+        }
+
+        class Action {
+            void repeat(final int depth, final IGreenThrFactory gf) {
+                IGreenThr thr = gf.newThread();
+                //
+                final Info info = new Info("A", depth);
+                MessageRelay.logInfo(info);
+                thr.execute(() -> {
+                    info.assertReceived(lastEvent.get());
+                    System.out.println("  got A" + depth);
+                    if (depth < 4)
+                        repeat(depth + 1, gf);
+                });
+                info.assertSent(lastEvent.get(), thr);
+                //
+                final Info infoB = new Info("B", depth);
+                MessageRelay.logInfo(infoB);
+                thr.execute(() -> {
+                    infoB.assertReceived(lastEvent.get());
+                    System.out.println("  got B" + depth);
+                });
+                infoB.assertSent(lastEvent.get(), thr);
+            }
+        }
+
+        System.out.println("testMessageRelay_RingBuf");
+        try (IGreenThrFactory gf = new GreenThrFactory_single(2)) {
+            buffer.listenToIncoming(new TraceCheck());
+            gf.setMessageRelay(new MessageRelay(buffer));
+            new Action().repeat(1, gf);
+//            gf.await(10000L);
+            gf.await(0);
+        }
+        System.out.println("\nDone running.  buffer: ");
+        buffer.forEach(System.out::println);
+        System.out.println("done testMessageRelay_RingBuf");
+    }
 }

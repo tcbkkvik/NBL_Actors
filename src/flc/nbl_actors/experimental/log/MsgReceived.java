@@ -27,6 +27,6 @@ public class MsgReceived implements IMsgEvent {
 
     @Override
     public String toString() {
-        return "  rec[" + sent.id + "]";
+        return "  run[" + sent.id + "]";
     }
 }

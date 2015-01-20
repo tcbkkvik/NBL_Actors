@@ -21,16 +21,18 @@ import java.util.function.Consumer;
  */
 public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<IMsgEvent> {
 
-    private final DequeRingBuffer<IMsgEvent> ring = new DequeRingBuffer<>();
-    private Consumer<IMsgEvent> logChain;
+    private final Object lock = new Object();
+    private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
+    private volatile int maxBufSize;
+    private volatile Consumer<IMsgEvent> listener;
 
     /**
      * @param maxSize  Max #events stored in ring-buffer
-     * @param logChain Next in logger chain, or null.
+     * @param listener Next in logger chain, or null.
      */
-    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> logChain) {
-        ring.setMaxBufSize(maxSize);
-        this.logChain = logChain;
+    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> listener) {
+        maxBufSize = maxSize;
+        this.listener = listener;
     }
 
     /**
@@ -39,23 +41,37 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
      * @param maxSize max size. size=0 means unlimited
      */
     public void setMaxBufSize(int maxSize) {
-        ring.setMaxBufSize(maxSize);
+        maxBufSize = maxSize;
     }
 
     /**
-     * Set next event consumer in log-chain
+     * Listens to incoming message events,
+     * received in {@link #accept(IMsgEvent)}.
      *
-     * @param logChain event consumer
+     * @param listener consumer
      */
-    public void setLogChain(Consumer<IMsgEvent> logChain) {
-        this.logChain = logChain;
+    public void listenToIncoming(Consumer<IMsgEvent> listener) {
+        this.listener = listener;
     }
 
+    /**
+     * Accept message event, send to attached listener if any,
+     * <p>before adding event to buffer (synchronized).
+     * </p>
+     *
+     * @param event message event
+     */
     @Override
     public void accept(IMsgEvent event) {
-        if (logChain != null)
-            logChain.accept(event);
-        ring.add(event);
+        synchronized (lock) {
+            if (listener != null)
+                listener.accept(event);
+            buffer.add(event);
+            if (maxBufSize > 0)
+                while (buffer.size() > maxBufSize) {
+                    buffer.poll();
+                }
+        }
     }
 
     @Override
@@ -64,12 +80,15 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
     }
 
     /**
-     * Dump all events
+     * Perform given action on buffered elements
      *
-     * @param dst destination
+     * @param action The action to be performed for each element
+     * @throws NullPointerException if the specified action is null
      */
-    public void dump(Consumer<IMsgEvent> dst) {
-        ring.dump(dst);
+    public void forEach(Consumer<? super IMsgEvent> action) {
+        synchronized (lock) {
+            buffer.forEach(action);
+        }
     }
 
     /**
@@ -78,7 +97,17 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
      * @return last event, or null if buffer is empty
      */
     public IMsgEvent peekLast() {
-        return ring.peekLast();
+        synchronized (lock) {
+            return buffer.peekLast();
+        }
+    }
+
+    private static MsgSent msgSent(IMsgEvent msg) {
+        if (msg instanceof MsgSent)
+            return (MsgSent) msg;
+        if (msg instanceof MsgReceived)
+            return ((MsgReceived) msg).sent;
+        return null;
     }
 
     /**
@@ -98,22 +127,18 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
             sent = (MsgSent) last;
         }
         list.add(sent);
-        synchronized (ring) {
-            Iterator<IMsgEvent> it = ring.descendingIterator();
+        synchronized (lock) {
+            Iterator<IMsgEvent> it = buffer.descendingIterator();
             MsgId prev = sent.idParent;
             while (it.hasNext()) {
-                IMsgEvent rec = it.next();
-                if (rec instanceof MsgSent) {
-                    sent = (MsgSent) rec;
-                    if (sent.id().equals(prev)) {
-                        prev = sent.idParent;
-                        list.add(sent);
-                    }
+                sent = msgSent(it.next());
+                if (sent != null && sent.id().equals(prev)) {
+                    prev = sent.idParent;
+                    list.add(sent);
                 }
             }
         }
         return list;
     }
 
-    //todo unit tests
 }
