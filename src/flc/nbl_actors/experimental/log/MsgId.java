@@ -26,7 +26,6 @@ public class MsgId {
         this.messageNo = messageNo;
     }
 
-    @SuppressWarnings("RedundantIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -35,6 +34,7 @@ public class MsgId {
         MsgId msgId = (MsgId) o;
 
         if (messageNo != msgId.messageNo) return false;
+        //noinspection RedundantIfStatement
         if (threadNo != msgId.threadNo) return false;
 
         return true;

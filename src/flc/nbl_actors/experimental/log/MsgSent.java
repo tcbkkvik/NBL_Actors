@@ -7,6 +7,7 @@
  */
 package flc.nbl_actors.experimental.log;
 
+import flc.nbl_actors.core.IActorRef;
 import flc.nbl_actors.core.IGreenThr;
 
 import java.util.function.Supplier;
@@ -41,13 +42,18 @@ public class MsgSent implements IMsgEvent {
      * target green-thread
      */
     public final IGreenThr targetThread;
+    /**
+     * target actor, or null
+     */
+    public final IActorRef targetActor;
 
-    public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to) {
+    public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to, IActorRef targetActor) {
         this.id = id;
         this.idParent = idParent;
         this.source = source;
         this.userInfo = userInfo;
         this.targetThread = to;
+        this.targetActor = targetActor;
     }
 
     @Override
@@ -55,12 +61,19 @@ public class MsgSent implements IMsgEvent {
         return id;
     }
 
+    private String targetInstanceString() {
+        if (targetActor == null) return "";
+//        int hash = targetActor.hashCode(); todo? add some type of (unique) instance ID?
+        return ":" + targetActor.getActorClass().getSimpleName();
+    }
+
     private String userInfoString() {
-        return userInfo == null ? "" : " : " + userInfo.get();
+        return userInfo == null ? "" : " {" + userInfo.get() + "}";
     }
 
     @Override
     public String toString() {
-        return " sent[" + id + "]" + idParent + " at " + source + userInfoString();
+        return " sent[" + id + "]" + idParent + " at " + source
+                + targetInstanceString() + userInfoString();
     }
 }

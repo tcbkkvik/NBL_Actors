@@ -15,9 +15,11 @@ package flc.nbl_actors.experimental.log;
  */
 public class MsgReceived implements IMsgEvent {
     public final MsgSent sent;
+    public final int toThrNo;
 
-    public MsgReceived(MsgSent sent) {
+    public MsgReceived(MsgSent sent, int toRealThreadNo) {
         this.sent = sent;
+        this.toThrNo = toRealThreadNo;
     }
 
     @Override
@@ -27,6 +29,6 @@ public class MsgReceived implements IMsgEvent {
 
     @Override
     public String toString() {
-        return "  run[" + sent.id + "]";
+        return "  run[" + sent.id + "]@" + toThrNo;
     }
 }

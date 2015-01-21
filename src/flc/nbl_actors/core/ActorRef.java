@@ -61,6 +61,11 @@ public class ActorRef<A> implements IActorRef<A> {
     }
 
     @Override
+    public Class getActorClass() {
+        return impl.getClass();
+    }
+
+    @Override
     public void send(final Consumer<A> msg) {
         thr.execute(new ActorMessage<>(msg, this));
     }

@@ -14,14 +14,9 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 /**
  * Date: 14.10.13
@@ -274,16 +269,27 @@ public class ASyncTest {
             }
         }
 
+        class MyActor extends ActorBase<MyActor> {
+            void call(int value) {
+                System.out.println("  actor received " + value);
+            }
+        }
+
         System.out.println("testMessageRelay_RingBuf");
         try (IGreenThrFactory gf = new GreenThrFactory_single(2)) {
             buffer.listenToIncoming(new TraceCheck());
             gf.setMessageRelay(new MessageRelay(buffer));
             new Action().repeat(1, gf);
+            final int no = 747;
+            MessageRelay.logInfo("" + no);
+            new MyActor().init(gf)
+                    .send(a -> a.call(no));
 //            gf.await(10000L);
             gf.await(0);
         }
         System.out.println("\nDone running.  buffer: ");
         buffer.forEach(System.out::println);
         System.out.println("done testMessageRelay_RingBuf");
+        //todo? junit-test smaller parts
     }
 }

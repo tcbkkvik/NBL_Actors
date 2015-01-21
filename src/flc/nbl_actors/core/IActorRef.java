@@ -95,4 +95,5 @@ public interface IActorRef<A> {
         return c;
     }
 
+    Class getActorClass();
 }

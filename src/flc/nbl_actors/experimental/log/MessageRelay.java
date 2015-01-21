@@ -82,18 +82,19 @@ public class MessageRelay implements IMessageRelay {
     @Override
     public Runnable intercept(Runnable msg, IGreenThr thread) {
         TContext ctx = context();
-//        if (msg instanceof ActorMessage) {
-//            ActorMessage actorMsg = (ActorMessage) msg;
-//            //todo this is an actor; log extra info? (actor#, greenThr#)
-//        }
+        IActorRef targetActor = null;
+        if (msg instanceof ActorMessage) {
+            ActorMessage am = (ActorMessage) msg;
+            targetActor = am.ref;
+        }
         final MsgSent sendEvent = new MsgSent(
-                ctx.nextId(), ctx.getParentId(), ctx.getLogInfo(), stackElement(3), thread);
+                ctx.nextId(), ctx.getParentId(), ctx.getLogInfo(), stackElement(3), thread, targetActor);
         ctx.setLogInfo(null);
         ctx.listener.accept(sendEvent);
         return () -> {
             TContext ctx2 = context();
             ctx2.setParentId(sendEvent.id);
-            ctx2.listener.accept(new MsgReceived(sendEvent));
+            ctx2.listener.accept(new MsgReceived(sendEvent, ctx2.thrNo));
             msg.run();
         };
     }

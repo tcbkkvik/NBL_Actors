@@ -16,8 +16,8 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class ActorMessage<A> implements Runnable {
-    final Consumer<A> msg;
-    final ActorRef<A> ref;
+    public final Consumer<A> msg;
+    public final ActorRef<A> ref;
 
     public ActorMessage(Consumer<A> msg, ActorRef<A> ref) {
         this.msg = msg;
