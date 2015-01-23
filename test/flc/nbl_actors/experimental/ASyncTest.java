@@ -14,6 +14,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
@@ -229,18 +230,28 @@ public class ASyncTest {
             @Override
             public void accept(IMsgEvent rec) {
                 lastEvent.set(rec);
+                System.out.println("Message trace:");
+                int depth = 0;
+                List<IMsgEvent> trace = buffer.getMessageTrace(rec);
+                for (IMsgEvent event : trace) {
+                    System.out.println("   * " + event);
+                    ++depth;
+                }
+                MessageRelay.TContext ctx = MessageRelay.getContext();
                 if (rec instanceof MsgSent) {
-                    System.out.println("Message trace:");
-                    int depth = 0;
-                    for (IMsgEvent event : buffer.getMessageTrace(rec)) {
-                        System.out.println("   * " + event);
-                        ++depth;
-                    }
                     MsgSent sent = (MsgSent) rec;
                     if (sent.userInfo instanceof Info) {
                         Info info = (Info) sent.userInfo;
                         assertEquals("getMessageTrace;depth", depth, info.depth);
                     }
+                    assertEquals(rec.id(), ctx.getLastSent().id());
+                }else{
+                    MsgReceived received = ctx.getLastReceived();
+                    boolean eq = rec.id().equals(received.id());
+                    assertTrue(eq);
+                    List<IMsgEvent> trace2 = ctx.getMessageTrace();
+                    IMsgEvent event = trace2.iterator().next();
+                    assertEquals(rec.id(), event.id());
                 }
             }
         }

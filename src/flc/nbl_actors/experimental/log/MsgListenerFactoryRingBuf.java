@@ -19,7 +19,8 @@ import java.util.function.Consumer;
  *
  * @author Tor C Bekkvik
  */
-public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<IMsgEvent> {
+public class MsgListenerFactoryRingBuf
+        implements IMsgListenerFactory, Consumer<IMsgEvent>, IMsgTrace {
 
     private final Object lock = new Object();
     private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
@@ -86,6 +87,7 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
      * @param action The action to be performed for each element
      * @throws NullPointerException if the specified action is null
      */
+    @Override
     public void forEach(Consumer<? super IMsgEvent> action) {
         synchronized (lock) {
             buffer.forEach(action);
@@ -103,22 +105,7 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         }
     }
 
-    /**
-     * Get message trace.
-     *
-     * @param last Last message to be traced from. (not null)
-     * @return List of messages, found by backward tracing
-     */
-    public List<IMsgEvent> getMessageTrace(IMsgEvent last) {
-        return getMessageTrace(last == null ? null : last.id());
-    }
-
-    public List<IMsgEvent> getMessageTrace(MsgId aId) {
-        List<IMsgEvent> list = new LinkedList<>();
-        getMessageTrace(aId, list::add);
-        return list;
-    }
-
+    @Override
     public void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer) {
         if (aId == null) return;
         synchronized (lock) {

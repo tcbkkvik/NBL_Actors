@@ -9,6 +9,8 @@ package flc.nbl_actors.experimental.log;
 
 import flc.nbl_actors.core.*;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -57,6 +59,11 @@ public class MessageRelay implements IMessageRelay {
         logInfo(() -> info);
     }
 
+    public static TContext getContext()
+    {
+        return threadContext.get();
+    }
+
     private StackTraceElement stackElement(int lev) {
         final String coreP = "flc.nbl_actors.core";
         int no = 0;
@@ -89,12 +96,9 @@ public class MessageRelay implements IMessageRelay {
         }
         final MsgSent sendEvent = new MsgSent(
                 ctx.nextId(), ctx.getParentId(), ctx.getLogInfo(), stackElement(3), thread, targetActor);
-        ctx.setLogInfo(null);
-        ctx.listener.accept(sendEvent);
+        ctx.sent(sendEvent);
         return () -> {
-            TContext ctx2 = context();
-            ctx2.setParentId(sendEvent.id);
-            ctx2.listener.accept(new MsgReceived(sendEvent, ctx2.thrNo));
+            context().received(sendEvent);
             msg.run();
         };
     }
@@ -109,9 +113,17 @@ public class MessageRelay implements IMessageRelay {
         private MsgId parentId;
         private Supplier<String> logInfo;
         private Consumer<IMsgEvent> listener;
+        private MsgReceived lastReceived;
+        private MsgSent lastSent;
 
-        private void setParentId(MsgId parentId) {
-            this.parentId = parentId;
+        private void received(MsgSent s) {
+            parentId = s.id;
+            listener.accept(lastReceived = new MsgReceived(s, thrNo));
+        }
+
+        private void sent(MsgSent rec) {
+            listener.accept(lastSent = rec);
+            logInfo = null;
         }
 
         public void setLogInfo(Supplier<String> info) {
@@ -129,5 +141,30 @@ public class MessageRelay implements IMessageRelay {
         public Supplier<String> getLogInfo() {
             return logInfo;
         }
+
+        public MsgReceived getLastReceived() {
+            return lastReceived;
+        }
+
+        public MsgSent getLastSent() {
+            return lastSent;
+        }
+
+        /**
+         * Attempt to produce a message trace-back for this thread context.
+         * <p>(returns empty list if IMsgListenerFactory does not implement IMsgTrace)
+         * </p>
+         *
+         * @return message trace
+         */
+        public List<IMsgEvent> getMessageTrace() {
+            List<IMsgEvent> list = new LinkedList<>();
+            if (lastReceived != null && listener instanceof IMsgTrace) {
+                ((IMsgTrace) listener)
+                        .getMessageTrace(lastReceived.id(), list::add);
+            }
+            return list;
+        }
+
     }
 }
