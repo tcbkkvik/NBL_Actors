@@ -287,8 +287,7 @@ public class ASyncTest {
 
         System.out.println("testMessageRelay_RingBuf");
         try (IGreenThrFactory gf = new GreenThrFactory_single(4)) {
-            buffer.listenToIncoming(new TraceCheck());
-            gf.setMessageRelay(new MessageRelay(buffer));
+            buffer.listenTo(gf, new TraceCheck());
             new Action().repeat(1, gf);
             final int no = 747;
             MessageRelay.logInfo("" + no);

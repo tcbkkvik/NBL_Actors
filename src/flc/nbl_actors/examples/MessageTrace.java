@@ -40,10 +40,10 @@ public class MessageTrace {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        final MsgListenerFactoryRingBuf ringBuffer = new MsgListenerFactoryRingBuf(1000, null);
-        //- Attach my own special listener:
-        ringBuffer.listenToIncoming(rec -> {
-            if (rec instanceof MsgSent) {
+        final MsgListenerFactoryRingBuf messageTrace = new MsgListenerFactoryRingBuf(1000, null);
+        try (IGreenThrFactory thrFactory = new GreenThrFactory_single(2)) {
+            messageTrace.listenTo(thrFactory, rec -> {
+                if (rec instanceof MsgSent) {
                   /*
                   Demonstrates user-defined runtime event inspection.
                   NB. Calling ringBuffer.getMessageTrace from here
@@ -52,22 +52,17 @@ public class MessageTrace {
                     (ii) records are buffered anyway, and can be
                          inspected later using buffer.forEach().
                     */
-                log("Message trace:");
-                ringBuffer.getMessageTrace(rec.id(), event -> log("   * " + event));
-            }
-        });
-
-        try (IGreenThrFactory thrFactory = new GreenThrFactory_single(2)) {
-            //SPECIAL -- tracing messages:
-            thrFactory.setMessageRelay(new MessageRelay(ringBuffer));
-
+                    log("Message trace:");
+                    messageTrace.getMessageTrace(rec.id(), event -> log("   * " + event));
+                }
+            });
             thrFactory.newThread().execute(() -> someTask(1, thrFactory));
             IActorRef<MyActor> ref = new MyActor().init(thrFactory);
             ref.send(a -> log("  MyActor received message"));
             thrFactory.await(60000L);
         }
         log("\nDone running. Buffer dump:");
-        ringBuffer.forEach(e -> System.out.println(e.info()));
+        messageTrace.forEach(e -> System.out.println(e.info()));
     }
 
 }

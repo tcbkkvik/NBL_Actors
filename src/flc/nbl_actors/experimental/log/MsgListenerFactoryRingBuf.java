@@ -8,6 +8,8 @@
 package flc.nbl_actors.experimental.log;
 
 
+import flc.nbl_actors.core.IGreenThrFactory;
+
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -25,15 +27,24 @@ public class MsgListenerFactoryRingBuf
     private final Object lock = new Object();
     private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
     private volatile int maxBufSize;
-    private volatile Consumer<IMsgEvent> listener;
+    private volatile Consumer<IMsgEvent> consumer;
 
     /**
      * @param maxSize  Max #events stored in ring-buffer
-     * @param listener Next in logger chain, or null.
+     * @param eventConsumer Next in logger chain, or null.
      */
-    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> listener) {
+    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> eventConsumer) {
         maxBufSize = maxSize;
-        this.listener = listener;
+        consumer = eventConsumer;
+    }
+
+    public void listenTo(IGreenThrFactory thrFactory, Consumer<IMsgEvent> eventConsumer) {
+        thrFactory.setMessageRelay(new MessageRelay(this));
+        setEventConsumer(eventConsumer);
+    }
+
+    public void listenTo(IGreenThrFactory thrFactory) {
+        thrFactory.setMessageRelay(new MessageRelay(this));
     }
 
     /**
@@ -49,14 +60,14 @@ public class MsgListenerFactoryRingBuf
      * Listens to incoming message events,
      * received in {@link #accept(IMsgEvent)}.
      *
-     * @param listener consumer
+     * @param eventConsumer consumer
      */
-    public void listenToIncoming(Consumer<IMsgEvent> listener) {
-        this.listener = listener;
+    public void setEventConsumer(Consumer<IMsgEvent> eventConsumer) {
+        this.consumer = eventConsumer;
     }
 
     /**
-     * Accept message event, send to attached listener if any,
+     * Accept message event, send to attached consumer if any,
      * <p>before adding event to buffer (synchronized).
      * </p>
      *
@@ -66,8 +77,8 @@ public class MsgListenerFactoryRingBuf
     public void accept(IMsgEvent event) {
         synchronized (lock) {
             buffer.add(event);
-            if (listener != null) {
-                listener.accept(event);
+            if (consumer != null) {
+                consumer.accept(event);
             }
             if (maxBufSize > 0)
                 while (buffer.size() > maxBufSize) {
