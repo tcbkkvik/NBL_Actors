@@ -33,9 +33,11 @@ public class MessageRelay implements IMessageRelay {
     /**
      * @param factory Called once per real thread.
      *                Enables parallel event logging.
-     *                The generator should return either
+     *                The factory should return either
      *                (i) a single synchronized listener instance, or
-     *                (ii) a separate listener per call (data may be merged later).
+     *                (ii) a separate listener per call (which may merge events).
+     *                Returned listeners should preferably implement IMsgTrace
+     *                to enable message-trace queries.
      */
     public MessageRelay(IMsgListenerFactory factory) {
         listenerFactory = factory;

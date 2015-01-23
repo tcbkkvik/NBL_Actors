@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
+ * Message-trace query interface. (used with IMsgListenerFactory)
  * <p>Date: 23.01.2015
  * </p>
  *
@@ -37,5 +38,11 @@ public interface IMsgTrace {
         return list;
     }
 
+    /**
+     * Get message trace.
+     *
+     * @param aId       Id of message event to trace backward from
+     * @param aConsumer event consumer
+     */
     void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer);
 }
