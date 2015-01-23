@@ -287,8 +287,8 @@ public class ASyncTest {
 //            gf.await(10000L);
             gf.await(0);
         }
-        System.out.println("\nDone running.  buffer: ");
-        buffer.forEach(System.out::println);
+        System.out.println("\nDone running.  Buffer dump:");
+        buffer.forEach(e -> System.out.println(e.info()));
         System.out.println("done testMessageRelay_RingBuf");
         //todo? junit-test smaller parts
     }

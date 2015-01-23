@@ -64,9 +64,10 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
     @Override
     public void accept(IMsgEvent event) {
         synchronized (lock) {
-            if (listener != null)
-                listener.accept(event);
             buffer.add(event);
+            if (listener != null) {
+                listener.accept(event);
+            }
             if (maxBufSize > 0)
                 while (buffer.size() > maxBufSize) {
                     buffer.poll();
@@ -102,43 +103,37 @@ public class MsgListenerFactoryRingBuf implements IMsgListenerFactory, Consumer<
         }
     }
 
-    private static MsgSent msgSent(IMsgEvent msg) {
-        if (msg instanceof MsgSent)
-            return (MsgSent) msg;
-        if (msg instanceof MsgReceived)
-            return ((MsgReceived) msg).sent;
-        return null;
-    }
-
     /**
      * Get message trace.
      *
-     * @param last Last message to be traced from.
+     * @param last Last message to be traced from. (not null)
      * @return List of messages, found by backward tracing
      */
     public List<IMsgEvent> getMessageTrace(IMsgEvent last) {
-        final List<IMsgEvent> list = new LinkedList<>();
-        if (last == null) return list;
-        MsgSent sent;
-        if (last instanceof MsgReceived) {
-            MsgReceived rc = (MsgReceived) last;
-            sent = rc.sent;
-        } else {
-            sent = (MsgSent) last;
-        }
-        list.add(sent);
+        return getMessageTrace(last == null ? null : last.id());
+    }
+
+    public List<IMsgEvent> getMessageTrace(MsgId aId) {
+        List<IMsgEvent> list = new LinkedList<>();
+        getMessageTrace(aId, list::add);
+        return list;
+    }
+
+    public void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer) {
+        if (aId == null) return;
         synchronized (lock) {
             Iterator<IMsgEvent> it = buffer.descendingIterator();
-            MsgId prev = sent.idParent;
             while (it.hasNext()) {
-                sent = msgSent(it.next());
-                if (sent != null && sent.id().equals(prev)) {
-                    prev = sent.idParent;
-                    list.add(sent);
-                }
+                IMsgEvent elem = it.next();
+                if (!elem.id().equals(aId))
+                    continue;
+                aConsumer.accept(elem);
+                MsgSent sent = elem instanceof MsgSent
+                        ? (MsgSent) elem
+                        : ((MsgReceived) elem).sent;
+                aId = sent.idParent;
             }
         }
-        return list;
     }
 
 }

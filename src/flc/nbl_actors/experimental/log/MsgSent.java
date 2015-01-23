@@ -71,9 +71,18 @@ public class MsgSent implements IMsgEvent {
         return userInfo == null ? "" : " {" + userInfo.get() + "}";
     }
 
+    protected String infoStr() {
+        return "[" + id + "]" + idParent + " at " + source
+                + targetInstanceString() + userInfoString();
+    }
+
+    @Override
+    public String info() {
+        return toString();
+    }
+
     @Override
     public String toString() {
-        return " sent[" + id + "]" + idParent + " at " + source
-                + targetInstanceString() + userInfoString();
+        return " sent" + infoStr();
     }
 }

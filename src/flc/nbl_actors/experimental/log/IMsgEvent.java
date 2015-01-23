@@ -20,4 +20,12 @@ public interface IMsgEvent {
      * @return id
      */
     MsgId id();
+
+    /**
+     * Minimal info; Complete in context with other logged events.
+     * Call toString() for more self-contained info.
+     *
+     * @return info
+     */
+    String info();
 }

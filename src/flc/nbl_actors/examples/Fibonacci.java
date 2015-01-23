@@ -51,8 +51,8 @@ public class Fibonacci extends ActorBase<Fibonacci> {
                 return ++no < count;
             }
         });
-        System.out.println("\nDump:");
-        trace.forEach(System.out::println);
+        System.out.println("\nBuffer dump:");
+        trace.forEach(e -> System.out.println(e.info()));
         System.out.println("\nTrace-back from last message:");
         int no = 0;
         for (IMsgEvent rec : trace.getMessageTrace(trace.peekLast())) {
