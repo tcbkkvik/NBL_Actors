@@ -238,20 +238,19 @@ public class ASyncTest {
                     ++depth;
                 }
                 MessageRelay.TContext ctx = MessageRelay.getContext();
+                MsgSent sent;
                 if (rec instanceof MsgSent) {
-                    MsgSent sent = (MsgSent) rec;
-                    if (sent.userInfo instanceof Info) {
-                        Info info = (Info) sent.userInfo;
-                        assertEquals("getMessageTrace;depth", depth, info.depth);
-                    }
-                    assertEquals(rec.id(), ctx.getLastSent().id());
-                }else{
-                    MsgReceived received = ctx.getLastReceived();
-                    boolean eq = rec.id().equals(received.id());
-                    assertTrue(eq);
+                    sent = (MsgSent) rec;
+                    assertEquals("sent id", rec.id(), ctx.getLastSent().id());
+                } else {
+                    sent = ((MsgReceived) rec).sent;
+                    assertEquals("received id", rec.id(), ctx.getLastReceived().id());
                     List<IMsgEvent> trace2 = ctx.getMessageTrace();
-                    IMsgEvent event = trace2.iterator().next();
-                    assertEquals(rec.id(), event.id());
+                    assertEquals("getMessageTrace:list", trace, trace2);
+                }
+                if (sent.userInfo instanceof Info) {
+                    Info info = (Info) sent.userInfo;
+                    assertEquals("getMessageTrace;depth", depth, info.depth);
                 }
             }
         }
@@ -287,7 +286,7 @@ public class ASyncTest {
         }
 
         System.out.println("testMessageRelay_RingBuf");
-        try (IGreenThrFactory gf = new GreenThrFactory_single(2)) {
+        try (IGreenThrFactory gf = new GreenThrFactory_single(4)) {
             buffer.listenToIncoming(new TraceCheck());
             gf.setMessageRelay(new MessageRelay(buffer));
             new Action().repeat(1, gf);
