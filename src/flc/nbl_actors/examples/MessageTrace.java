@@ -58,18 +58,18 @@ public class MessageTrace {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        final MsgListenerFactoryRingBuf
-                messageBuf = new MsgListenerFactoryRingBuf(1000);
         try (IGreenThrFactory thrFactory = new GreenThrFactory_single(2)) {
-            messageBuf.listenTo(thrFactory).setEventAction(rec -> {
+            final MsgListenerFactoryRingBuf messageBuf = new MsgListenerFactoryRingBuf(1000)
+                    .listenTo(thrFactory);
+            messageBuf.setEventAction(rec -> {
                         if (rec instanceof MsgSent) {
                   /*
                   Demonstrates user-defined runtime event inspection.
-                  NB. Calling ringBuffer.getMessageTrace from here
+                  NB. Calling .getMessageTrace(..) from here
                   gets noisy, and is a bad idea for production code:
                     (i) lots of redundant logging here
                     (ii) records are buffered anyway, and can be
-                         inspected later using buffer.forEach().
+                         inspected later using .forEach(..)
                     */
                             log("Message trace:");
                             messageBuf.getMessageTrace(rec.id(), event -> log("   * " + event));
@@ -80,9 +80,9 @@ public class MessageTrace {
             IActorRef<MyActor> ref = new MyActor().init(thrFactory);
             ref.send(a -> log("  MyActor received message"));
             thrFactory.await(60000L);
+            log("\nDone running. Buffer dump:");
+            messageBuf.forEach(e -> System.out.println(e.info()));
         }
-        log("\nDone running. Buffer dump:");
-        messageBuf.forEach(e -> System.out.println(e.info()));
     }
 
 }
