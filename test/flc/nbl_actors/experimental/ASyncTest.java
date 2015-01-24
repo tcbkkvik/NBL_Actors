@@ -197,7 +197,7 @@ public class ASyncTest {
 
     @Test
     public void testMessageRelay_RingBuf() throws InterruptedException {
-        final MsgListenerFactoryRingBuf buffer = new MsgListenerFactoryRingBuf(100, null);
+        final MsgListenerFactoryRingBuf buffer = new MsgListenerFactoryRingBuf(100);
         final ThreadLocal<IMsgEvent> lastEvent = new ThreadLocal<>();
 
         class Info implements Supplier<String> {
@@ -287,7 +287,7 @@ public class ASyncTest {
 
         System.out.println("testMessageRelay_RingBuf");
         try (IGreenThrFactory gf = new GreenThrFactory_single(4)) {
-            buffer.listenTo(gf, new TraceCheck());
+            buffer.listenTo(gf).setEventAction(new TraceCheck());
             new Action().repeat(1, gf);
             final int no = 747;
             MessageRelay.logInfo("" + no);

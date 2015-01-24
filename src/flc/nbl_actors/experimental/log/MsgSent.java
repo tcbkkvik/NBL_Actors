@@ -83,6 +83,6 @@ public class MsgSent implements IMsgEvent {
 
     @Override
     public String toString() {
-        return " sent" + infoStr();
+        return "sent" + infoStr();
     }
 }

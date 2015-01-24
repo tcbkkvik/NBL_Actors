@@ -17,8 +17,8 @@ import java.util.function.Consumer;
  */
 public interface IMsgListenerFactory {
     /**
-     * Get next listener. Intended to be called once
-     * from each event-producing thread.
+     * Fork a new per-thread listener. Intended to be called once
+     * per event producing java-thread.
      *
      * @return Event consumer
      */

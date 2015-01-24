@@ -29,11 +29,11 @@ public class MsgReceived implements IMsgEvent {
 
     @Override
     public String info() {
-        return "  run[" + sent.id + "] thread:" + toThrNo;
+        return " run[" + sent.id + "] thread:" + toThrNo;
     }
 
     @Override
     public String toString() {
-        return " sent!" + sent.infoStr() + " thread:" + toThrNo;
+        return "sent!" + sent.infoStr() + " thread:" + toThrNo;
     }
 }

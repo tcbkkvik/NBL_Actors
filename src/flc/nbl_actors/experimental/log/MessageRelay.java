@@ -9,6 +9,7 @@ package flc.nbl_actors.experimental.log;
 
 import flc.nbl_actors.core.*;
 
+import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,8 +62,12 @@ public class MessageRelay implements IMessageRelay {
         logInfo(() -> info);
     }
 
-    public static TContext getContext()
-    {
+    /**
+     * Get Thread-Local context (state)
+     *
+     * @return context
+     */
+    public static TContext getContext() {
         return threadContext.get();
     }
 
@@ -166,6 +171,15 @@ public class MessageRelay implements IMessageRelay {
                         .getMessageTrace(lastReceived.id(), list::add);
             }
             return list;
+        }
+
+        public void printMessageTrace(PrintStream s) {
+            for (IMsgEvent event : getMessageTrace())
+                s.println("\t" + event);
+        }
+
+        public void printMessageTrace() {
+            printMessageTrace(System.err);
         }
 
     }

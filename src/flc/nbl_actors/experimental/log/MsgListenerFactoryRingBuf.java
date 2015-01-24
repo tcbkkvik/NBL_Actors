@@ -27,43 +27,46 @@ public class MsgListenerFactoryRingBuf
     private final Object lock = new Object();
     private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
     private volatile int maxBufSize;
-    private volatile Consumer<IMsgEvent> consumer;
+    private volatile Consumer<? super IMsgEvent> eventAction;
 
     /**
-     * @param maxSize  Max #events stored in ring-buffer
-     * @param eventConsumer Next in logger chain, or null.
+     * @param maxSize Max #events stored in ring-buffer
      */
-    public MsgListenerFactoryRingBuf(int maxSize, Consumer<IMsgEvent> eventConsumer) {
+    public MsgListenerFactoryRingBuf(int maxSize) {
         maxBufSize = maxSize;
-        consumer = eventConsumer;
     }
 
-    public void listenTo(IGreenThrFactory thrFactory, Consumer<IMsgEvent> eventConsumer) {
-        thrFactory.setMessageRelay(new MessageRelay(this));
-        setEventConsumer(eventConsumer);
+    /**
+     * Listen to messages from thread-factory
+     * <p>({@code Data flow: IGreenThrFactory ==> MessageRelay ==> this})
+     * </p>
+     *
+     * @param threads thread-factory
+     * @return this
+     */
+    public MsgListenerFactoryRingBuf listenTo(IGreenThrFactory threads) {
+        threads.setMessageRelay(new MessageRelay(this));
+        return this;
     }
 
-    public void listenTo(IGreenThrFactory thrFactory) {
-        thrFactory.setMessageRelay(new MessageRelay(this));
+    /**
+     * Set event action, to be performed when {@link #accept(IMsgEvent)} is called.
+     *
+     * @param action event action
+     * @return this
+     */
+    public MsgListenerFactoryRingBuf setEventAction(Consumer<? super IMsgEvent> action) {
+        this.eventAction = action;
+        return this;
     }
 
     /**
      * Set max ring buffer size
      *
-     * @param maxSize max size. size=0 means unlimited
+     * @param maxSize Max #events stored in ring-buffer
      */
     public void setMaxBufSize(int maxSize) {
         maxBufSize = maxSize;
-    }
-
-    /**
-     * Listens to incoming message events,
-     * received in {@link #accept(IMsgEvent)}.
-     *
-     * @param eventConsumer consumer
-     */
-    public void setEventConsumer(Consumer<IMsgEvent> eventConsumer) {
-        this.consumer = eventConsumer;
     }
 
     /**
@@ -77,8 +80,8 @@ public class MsgListenerFactoryRingBuf
     public void accept(IMsgEvent event) {
         synchronized (lock) {
             buffer.add(event);
-            if (consumer != null) {
-                consumer.accept(event);
+            if (eventAction != null) {
+                eventAction.accept(event);
             }
             if (maxBufSize > 0)
                 while (buffer.size() > maxBufSize) {
@@ -95,7 +98,7 @@ public class MsgListenerFactoryRingBuf
     /**
      * Perform given action on buffered elements
      *
-     * @param action The action to be performed for each element
+     * @param action Action performed for each element
      * @throws NullPointerException if the specified action is null
      */
     @Override
