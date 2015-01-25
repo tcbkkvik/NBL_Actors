@@ -101,7 +101,7 @@ public class MessageRelay implements IMessageRelay {
             ActorMessage am = (ActorMessage) msg;
             targetActor = am.ref;
         }
-        final MsgSent sendEvent = new MsgSent(
+        final MsgEventSent sendEvent = new MsgEventSent(
                 ctx.nextId(), ctx.getParentId(), ctx.getLogInfo(), stackElement(3), thread, targetActor);
         ctx.sent(sendEvent);
         return () -> {
@@ -132,15 +132,15 @@ public class MessageRelay implements IMessageRelay {
         private MsgId parentId;
         private Supplier<String> logInfo;
         private Consumer<IMsgEvent> listener;
-        private MsgReceived lastReceived;
-        private MsgSent lastSent;
+        private MsgEventReceived lastReceived;
+        private MsgEventSent lastSent;
 
-        private void received(MsgSent s) {
+        private void received(MsgEventSent s) {
             parentId = s.id;
-            listener.accept(lastReceived = new MsgReceived(s, thrNo));
+            listener.accept(lastReceived = new MsgEventReceived(s, thrNo));
         }
 
-        private void sent(MsgSent rec) {
+        private void sent(MsgEventSent rec) {
             listener.accept(lastSent = rec);
             logInfo = null;
         }
@@ -161,11 +161,11 @@ public class MessageRelay implements IMessageRelay {
             return logInfo;
         }
 
-        public MsgReceived getLastReceived() {
+        public MsgEventReceived getLastReceived() {
             return lastReceived;
         }
 
-        public MsgSent getLastSent() {
+        public MsgEventSent getLastSent() {
             return lastSent;
         }
 
@@ -178,8 +178,8 @@ public class MessageRelay implements IMessageRelay {
          */
         public List<IMsgEvent> getMessageTrace() {
             List<IMsgEvent> list = new LinkedList<>();
-            if (lastReceived != null && listener instanceof IMsgTrace) {
-                ((IMsgTrace) listener)
+            if (lastReceived != null && listener instanceof IMsgEventBuf) {
+                ((IMsgEventBuf) listener)
                         .getMessageTrace(lastReceived.id(), list::add);
             }
             return list;

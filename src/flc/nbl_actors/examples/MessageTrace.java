@@ -58,10 +58,10 @@ public class MessageTrace {
 
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory thrFactory = new GreenThrFactory_single(2)) {
-            final MsgListenerFactoryRingBuf messageBuf = new MsgListenerFactoryRingBuf(1000)
+            final MessageEventBuffer messageBuf = new MessageEventBuffer(1000)
                     .listenTo(thrFactory);
             messageBuf.setEventAction(rec -> {
-                        if (rec instanceof MsgSent) {
+                        if (rec instanceof MsgEventSent) {
                   /*
                   Demonstrates user-defined runtime event inspection.
                   NB. Calling .getMessageTrace(..) from here

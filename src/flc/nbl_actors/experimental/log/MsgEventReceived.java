@@ -13,11 +13,11 @@ package flc.nbl_actors.experimental.log;
  *
  * @author Tor C Bekkvik
  */
-public class MsgReceived implements IMsgEvent {
-    public final MsgSent sent;
+public class MsgEventReceived implements IMsgEvent {
+    public final MsgEventSent sent;
     public final int toThrNo;
 
-    public MsgReceived(MsgSent sent, int toRealThreadNo) {
+    public MsgEventReceived(MsgEventSent sent, int toRealThreadNo) {
         this.sent = sent;
         this.toThrNo = toRealThreadNo;
     }

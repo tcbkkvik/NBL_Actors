@@ -40,7 +40,7 @@ public class Fibonacci extends ActorBase<Fibonacci> {
         System.out.println("Fibonacci numbers; first " + count);
         GreenThr_zero thr = new GreenThr_zero();
         //- How to log message trace..
-        MsgListenerFactoryRingBuf buffer = new MsgListenerFactoryRingBuf(100)
+        MessageEventBuffer buffer = new MessageEventBuffer(100)
                 .listenTo(thr);
         run(thr, new Function<BigInteger, Boolean>() {
             int no;

@@ -18,7 +18,7 @@ import java.util.function.Consumer;
  *
  * @author Tor C Bekkvik
  */
-public interface IMsgTrace {
+public interface IMsgEventBuf {
 
     void forEach(Consumer<? super IMsgEvent> action);
 

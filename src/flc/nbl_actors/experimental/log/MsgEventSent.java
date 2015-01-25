@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  *
  * @author Tor C Bekkvik
  */
-public class MsgSent implements IMsgEvent {
+public class MsgEventSent implements IMsgEvent {
     /**
      * Message Id
      */
@@ -47,7 +47,7 @@ public class MsgSent implements IMsgEvent {
      */
     public final IActorRef targetActor;
 
-    public MsgSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to, IActorRef targetActor) {
+    public MsgEventSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to, IActorRef targetActor) {
         this.id = id;
         this.idParent = idParent;
         this.source = source;

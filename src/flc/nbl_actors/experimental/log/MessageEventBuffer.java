@@ -21,8 +21,8 @@ import java.util.function.Consumer;
  *
  * @author Tor C Bekkvik
  */
-public class MsgListenerFactoryRingBuf
-        implements IMsgListenerFactory, Consumer<IMsgEvent>, IMsgTrace {
+public class MessageEventBuffer
+        implements IMsgListenerFactory, Consumer<IMsgEvent>, IMsgEventBuf {
 
     private final Object lock = new Object();
     private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
@@ -32,7 +32,7 @@ public class MsgListenerFactoryRingBuf
     /**
      * @param maxSize Max #events stored in ring-buffer
      */
-    public MsgListenerFactoryRingBuf(int maxSize) {
+    public MessageEventBuffer(int maxSize) {
         maxBufSize = maxSize;
     }
 
@@ -44,7 +44,7 @@ public class MsgListenerFactoryRingBuf
      * @param threads thread-factory
      * @return this
      */
-    public MsgListenerFactoryRingBuf listenTo(IGreenThrFactory threads) {
+    public MessageEventBuffer listenTo(IGreenThrFactory threads) {
         threads.setMessageRelay(new MessageRelay(this));
         return this;
     }
@@ -55,7 +55,7 @@ public class MsgListenerFactoryRingBuf
      * @param action event action
      * @return this
      */
-    public MsgListenerFactoryRingBuf setEventAction(Consumer<? super IMsgEvent> action) {
+    public MessageEventBuffer setEventAction(Consumer<? super IMsgEvent> action) {
         this.eventAction = action;
         return this;
     }
@@ -129,9 +129,9 @@ public class MsgListenerFactoryRingBuf
                 if (!elem.id().equals(aId))
                     continue;
                 aConsumer.accept(elem);
-                MsgSent sent = elem instanceof MsgSent
-                        ? (MsgSent) elem
-                        : ((MsgReceived) elem).sent;
+                MsgEventSent sent = elem instanceof MsgEventSent
+                        ? (MsgEventSent) elem
+                        : ((MsgEventReceived) elem).sent;
                 aId = sent.idParent;
             }
         }

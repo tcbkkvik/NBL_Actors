@@ -197,7 +197,7 @@ public class ASyncTest {
 
     @Test
     public void testMessageRelay_RingBuf() throws InterruptedException {
-        final MsgListenerFactoryRingBuf buffer = new MsgListenerFactoryRingBuf(100);
+        final MessageEventBuffer buffer = new MessageEventBuffer(100);
         final ThreadLocal<IMsgEvent> lastEvent = new ThreadLocal<>();
 
         class Info implements Supplier<String> {
@@ -215,13 +215,13 @@ public class ASyncTest {
             }
 
             void assertSent(IMsgEvent event, IGreenThr toThr) {
-                MsgSent s = (MsgSent) event;
+                MsgEventSent s = (MsgEventSent) event;
                 assertTrue(s.userInfo == this);
                 assertTrue(s.targetThread == toThr);
             }
 
             void assertReceived(IMsgEvent event) {
-                MsgSent s = ((MsgReceived) event).sent;
+                MsgEventSent s = ((MsgEventReceived) event).sent;
                 assertTrue(s.userInfo == this);
             }
         }
@@ -238,12 +238,12 @@ public class ASyncTest {
                     ++depth;
                 }
                 MessageRelay.TContext ctx = MessageRelay.getContext();
-                MsgSent sent;
-                if (rec instanceof MsgSent) {
-                    sent = (MsgSent) rec;
+                MsgEventSent sent;
+                if (rec instanceof MsgEventSent) {
+                    sent = (MsgEventSent) rec;
                     assertEquals("sent id", rec.id(), ctx.getLastSent().id());
                 } else {
-                    sent = ((MsgReceived) rec).sent;
+                    sent = ((MsgEventReceived) rec).sent;
                     assertEquals("received id", rec.id(), ctx.getLastReceived().id());
                     List<IMsgEvent> trace2 = ctx.getMessageTrace();
                     assertEquals("getMessageTrace:list", trace, trace2);
