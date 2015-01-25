@@ -44,8 +44,7 @@ public class MessageTrace {
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     System.err.println("\tMessage trace:");
-                    MessageRelay.getContext()
-                            .printMessageTrace();
+                    MessageRelay.printMessageTrace();
                 }
             }
         });

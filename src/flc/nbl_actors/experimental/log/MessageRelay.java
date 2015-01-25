@@ -110,6 +110,18 @@ public class MessageRelay implements IMessageRelay {
         };
     }
 
+    public static List<IMsgEvent> getMessageTrace() {
+        return threadContext.get().getMessageTrace();
+    }
+
+    public static void printMessageTrace(PrintStream s) {
+        threadContext.get().printMessageTrace(s);
+    }
+
+    public static void printMessageTrace() {
+        threadContext.get().printMessageTrace(System.err);
+    }
+
     /**
      * Thread Context.
      */
