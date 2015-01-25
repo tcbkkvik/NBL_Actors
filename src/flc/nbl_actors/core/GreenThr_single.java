@@ -23,7 +23,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     private volatile boolean isStopping, isStack;
     private final ThreadActivity threadActive = new ThreadActivity();
     private final IGreenThrFactory myFactory;
-    private volatile IMessageRelay messageRelay = (r, t) -> r;
+    private volatile Function<Runnable, Runnable> interceptor = r -> r;
 
     /**
      * Green-thread using java.lang.Thread.
@@ -98,8 +98,8 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     }
 
     @Override
-    public void setMessageRelay(IMessageRelay relay) {
-        messageRelay = relay == null ? (r, t) -> r : relay;
+    public void setMessageRelay(IMessageRelay msgRelay) {
+        interceptor = msgRelay.newInterceptor(this);
     }
 
     public void reverseOrder(boolean reversed) {
@@ -109,7 +109,7 @@ public class GreenThr_single implements IGreenThr, IGreenThrFactory {
     @Override
     public void execute(Runnable r0) {
         if (isStopping) return;
-        Runnable r = messageRelay.intercept(r0, this);
+        Runnable r = interceptor.apply(r0);
         threadActive.setActive(true);
         if (isStack)
             queue.addFirst(r);

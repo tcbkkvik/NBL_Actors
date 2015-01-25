@@ -85,4 +85,26 @@ public class MsgEventSent implements IMsgEvent {
     public String toString() {
         return "sent" + infoStr();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MsgEventSent)) return false;
+
+        MsgEventSent that = (MsgEventSent) o;
+
+        if (!id.equals(that.id)) return false;
+        if (idParent != null ? !idParent.equals(that.idParent) : that.idParent != null) return false;
+        if (source != null ? !source.equals(that.source) : that.source != null) return false;
+        if (targetActor != null ? !targetActor.equals(that.targetActor) : that.targetActor != null) return false;
+        if (!targetThread.equals(that.targetThread)) return false;
+        if (userInfo != null ? !userInfo.equals(that.userInfo) : that.userInfo != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
 }

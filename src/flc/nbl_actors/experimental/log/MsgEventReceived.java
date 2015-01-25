@@ -36,4 +36,22 @@ public class MsgEventReceived implements IMsgEvent {
     public String toString() {
         return "sent!" + sent.infoStr() + " thread:" + toThrNo;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MsgEventReceived)) return false;
+
+        MsgEventReceived that = (MsgEventReceived) o;
+
+        if (toThrNo != that.toThrNo) return false;
+        if (!sent.equals(that.sent)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return toThrNo;
+    }
 }

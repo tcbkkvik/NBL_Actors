@@ -7,6 +7,8 @@
  */
 package flc.nbl_actors.core;
 
+import java.util.function.Function;
+
 /**
  * Message relay. Listen to Runnable messages sent and received.
  * <p>Date 16.01.2015.</p>
@@ -16,15 +18,14 @@ package flc.nbl_actors.core;
 public interface IMessageRelay {
 
     /**
-     * Intercept runnable message.
-     * To be called when message is sent. The returned (possibly instrumented)
-     * message should be added to the thread-queue instead of the original message.
-     * The message has been received when Runnable.run() is called.
+     * Make new interceptor.
+     * <p>The interceptor should return original Runnable message,
+     * optionally wrapped in a containing Runnable for listening purposes.
+     * (eg. message tracing and debugging)
+     * </p>
      *
-     * @param msg    original message
-     * @param thread green-thread to execute the message
-     * @return original message, optionally wrapped in another
-     * Runnable for listening purposes. (eg. message tracing and debugging)
+     * @param ownerThread owner thread to be using the returned interceptor
+     * @return interceptor interceptor function
      */
-    Runnable intercept(Runnable msg, IGreenThr thread);
+    Function<Runnable, Runnable> newInterceptor(IGreenThr ownerThread);
 }

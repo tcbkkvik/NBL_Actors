@@ -57,7 +57,7 @@ public interface IGreenThrFactory extends Closeable {
      * Set message relay. Intended to capture send/receive events
      * for message tracing/debugging. Default implementation does nothing.
      * Standard {@link #newThread} implementations should produce
-     * threads that calls {@link IMessageRelay#intercept(Runnable, IGreenThr)}
+     * threads that calls {@link IMessageRelay#newInterceptor(IGreenThr)}
      * from {@link IGreenThr#execute(Runnable)}.
      *
      * @param msgRelay relay

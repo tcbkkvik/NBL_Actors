@@ -10,6 +10,7 @@ package flc.nbl_actors.core;
 import java.util.Deque;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Green-thread using no threads; All scheduled messages are processed by current
@@ -25,7 +26,7 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     private boolean isStop; //true if not accepting new messages in execute()
     private boolean isStack; //LIFO
     private final ThreadActivity threadActive = new ThreadActivity();
-    private IMessageRelay messageRelay = (r, t) -> r;
+    private volatile Function<Runnable, Runnable> interceptor = r -> r;
 
     /**
      * Init with default order = FIFO (first-in-first-out)
@@ -35,8 +36,8 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     }
 
     @Override
-    public void setMessageRelay(IMessageRelay relay) {
-        messageRelay = relay == null ? (r, t) -> r : relay;
+    public void setMessageRelay(IMessageRelay msgRelay) {
+        interceptor = msgRelay.newInterceptor(this);
     }
 
     public void reverseOrder(boolean reversed) {
@@ -77,7 +78,7 @@ public class GreenThr_zero implements IGreenThr, IGreenThrFactory {
     @Override
     public void execute(Runnable r0) {
         if (isStop) return;
-        Runnable r = messageRelay.intercept(r0, this);
+        Runnable r = interceptor.apply(r0);
         if (isStack)
             queue.addFirst(r);
         else

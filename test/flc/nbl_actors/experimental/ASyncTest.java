@@ -299,6 +299,67 @@ public class ASyncTest {
         System.out.println("\nDone running.  Buffer dump:");
         buffer.forEach(e -> System.out.println(e.info()));
         System.out.println("done testMessageRelay_RingBuf");
-        //todo? junit-test smaller parts
+    }
+
+    @Test
+    public void testMessageRelay() {//simple single-thread test
+        class LastEvent implements IMsgListenerFactory, Consumer<IMsgEvent> {
+            IMsgEvent event;
+
+            @Override
+            public Consumer<IMsgEvent> forkListener() {
+                return this;
+            }
+
+            @Override
+            public void accept(IMsgEvent event) {
+                this.event = event;
+            }
+        }
+        class Message implements Runnable {
+            boolean done;
+
+            @Override
+            public void run() {
+                done = true;
+            }
+        }
+        final IGreenThr targetThr = Runnable::run;
+        final LastEvent lastEvent = new LastEvent();
+        final MessageRelay relay = new MessageRelay(lastEvent);
+        final MessageRelay.TContext context = MessageRelay.getContext();
+        final MsgId initId = context.nextId();
+        final Supplier<String> userInfo = () -> "user logInfo";
+        Function<Runnable, Runnable> intercept = relay.newInterceptor(targetThr);
+        //- send 1:
+        Message msgIn = new Message();
+        MessageRelay.logInfo(userInfo);
+        Runnable msg_1 = intercept.apply(msgIn);//:send
+        MsgEventSent sent = (MsgEventSent) lastEvent.event;
+        MsgEventSent sentExpect = new MsgEventSent(
+                new MsgId(initId.threadNo, initId.messageNo + 1),
+                null, userInfo, sent.source, targetThr, null);
+        assertEquals(sent, sentExpect);
+        //- receive 1:
+        msg_1.run(); //;receive
+        assertTrue(msgIn.done);
+        MsgEventReceived received = (MsgEventReceived) lastEvent.event;
+        MsgEventReceived receivedExpect = new MsgEventReceived(sent, initId.threadNo);
+        assertEquals(received, receivedExpect);
+        //- send 2:
+        msgIn.done = false;
+        MessageRelay.logInfo(userInfo);
+        Runnable msg_2 = intercept.apply(msgIn);//:send
+        MsgEventSent sent2 = (MsgEventSent) lastEvent.event;
+        MsgEventSent sentExpect2 = new MsgEventSent(
+                new MsgId(initId.threadNo, sent.id.messageNo + 1),
+                sent.id, userInfo, sent2.source, targetThr, null);
+        assertEquals(sent2, sentExpect2);
+
+        msg_2.run();//:receive
+        assertTrue(msgIn.done);
+        MsgEventReceived received2 = (MsgEventReceived) lastEvent.event;
+        MsgEventReceived receivedExpect2 = new MsgEventReceived(sent2, initId.threadNo);
+        assertEquals(received2, receivedExpect2);
     }
 }
