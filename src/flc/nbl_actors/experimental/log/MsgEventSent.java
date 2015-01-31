@@ -35,9 +35,9 @@ public class MsgEventSent implements IMsgEvent {
     public final StackTraceElement source;
 
     /**
-     * optional user-supplied information
+     * optional user-supplied log information
      */
-    public final Supplier<String> userInfo;
+    public final Supplier<String> logInfo;
     /**
      * target green-thread
      */
@@ -47,11 +47,11 @@ public class MsgEventSent implements IMsgEvent {
      */
     public final IActorRef targetActor;
 
-    public MsgEventSent(MsgId id, MsgId idParent, Supplier<String> userInfo, StackTraceElement source, IGreenThr to, IActorRef targetActor) {
+    public MsgEventSent(MsgId id, MsgId idParent, Supplier<String> logInfo, StackTraceElement source, IGreenThr to, IActorRef targetActor) {
         this.id = id;
         this.idParent = idParent;
         this.source = source;
-        this.userInfo = userInfo;
+        this.logInfo = logInfo;
         this.targetThread = to;
         this.targetActor = targetActor;
     }
@@ -63,16 +63,16 @@ public class MsgEventSent implements IMsgEvent {
 
     private String targetInstanceString() {
         if (targetActor == null) return "";
-//        int hash = targetActor.hashCode(); todo? add some type of (unique) instance ID?
+//        int hash = targetActor.hashCode(); to do?? add some type of (unique) instance ID?
         return ":" + targetActor.getActorClass().getSimpleName();
     }
 
     private String userInfoString() {
-        return userInfo == null ? "" : " {" + userInfo.get() + "}";
+        return logInfo == null ? "" : " {" + logInfo.get() + "}";
     }
 
     protected String infoStr() {
-        return "[" + id + "]" + idParent + " at " + source
+        return "[" + id + "]" + idParent + (source == null ? " " : " at " + source)
                 + targetInstanceString() + userInfoString();
     }
 
@@ -98,7 +98,7 @@ public class MsgEventSent implements IMsgEvent {
         if (source != null ? !source.equals(that.source) : that.source != null) return false;
         if (targetActor != null ? !targetActor.equals(that.targetActor) : that.targetActor != null) return false;
         if (!targetThread.equals(that.targetThread)) return false;
-        if (userInfo != null ? !userInfo.equals(that.userInfo) : that.userInfo != null) return false;
+        if (logInfo != null ? !logInfo.equals(that.logInfo) : that.logInfo != null) return false;
 
         return true;
     }

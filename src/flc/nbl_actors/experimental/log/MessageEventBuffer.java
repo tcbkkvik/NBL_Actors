@@ -22,12 +22,13 @@ import java.util.function.Consumer;
  * @author Tor C Bekkvik
  */
 public class MessageEventBuffer
-        implements IMsgListenerFactory, Consumer<IMsgEvent>, IMsgEventBuf {
+        implements IMsgListenerFactory, Consumer<IMsgEvent>, IMsgEventTracer {
 
     private final Object lock = new Object();
     private final Deque<IMsgEvent> buffer = new ArrayDeque<>();
     private volatile int maxBufSize;
     private volatile Consumer<? super IMsgEvent> eventAction;
+    private volatile MessageRelay relay;
 
     /**
      * @param maxSize Max #events stored in ring-buffer
@@ -42,11 +43,18 @@ public class MessageEventBuffer
      * </p>
      *
      * @param threads thread-factory
+     * @param isReduceLog true = reduce log (minimize internal per message stack-traces)
      * @return this
      */
-    public MessageEventBuffer listenTo(IGreenThrFactory threads) {
-        threads.setMessageRelay(new MessageRelay(this));
+    public MessageEventBuffer listenTo(IGreenThrFactory threads, boolean isReduceLog) {
+        threads.setMessageRelay(relay = new MessageRelay(this));
+        relay.setReduceLog(isReduceLog);
         return this;
+    }
+
+    public MessageEventBuffer listenTo(IGreenThrFactory threads)
+    {
+        return listenTo(threads, false);
     }
 
     /**
@@ -68,6 +76,31 @@ public class MessageEventBuffer
     public void setMaxBufSize(int maxSize) {
         maxBufSize = maxSize;
     }
+
+    /**
+     * Reduce logging (may help performance).
+     * <p>If true: avoids calling Throwable.getStackTrace() for messages
+     * with attached MessageRelay.logInfo().
+     * Usable after {@link #listenTo(flc.nbl_actors.core.IGreenThrFactory, boolean)}
+     * </p>
+     *
+     * @param isReduce true to reduce (default is false)
+     */
+    public void setReduceLog(boolean isReduce) {
+        if (relay != null)
+            relay.setReduceLog(isReduce);
+    }
+
+    /**
+     * Disable or enable logging
+     *
+     * @param isDisabled true = disable, false = normal logging
+     */
+    public void setDisableLog(boolean isDisabled) {
+        if (relay != null)
+            relay.setDisableLog(isDisabled);
+    }
+
 
     /**
      * Accept message event, send to attached consumer if any,
@@ -95,13 +128,18 @@ public class MessageEventBuffer
         return this;
     }
 
+    public IMsgEvent[] toArray() {
+        synchronized (lock) {
+            return buffer.toArray(new IMsgEvent[buffer.size()]);
+        }
+    }
+
     /**
      * Perform given action on buffered elements
      *
      * @param action Action performed for each element
      * @throws NullPointerException if the specified action is null
      */
-    @Override
     public void forEach(Consumer<? super IMsgEvent> action) {
         synchronized (lock) {
             buffer.forEach(action);

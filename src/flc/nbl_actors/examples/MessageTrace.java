@@ -27,7 +27,7 @@ public class MessageTrace {
         if (z > 1)
             recursiveMethod(z - 1);
         else
-            throw new IllegalStateException("Demonstrating mixed Stack + Message trace");
+            throw new IllegalStateException("(NOT a real exception) Demonstrating mixed Stack + Message trace");
     }
 
     static void someTask(final int depth, final IGreenThrFactory gf) {
@@ -36,7 +36,7 @@ public class MessageTrace {
         MessageRelay.logInfo("send A" + depth);
         thr.execute(() -> {
             log("  got A" + depth);
-            if (depth < 4) {
+            if (depth < 3) {
                 someTask(depth + 1, gf);
             } else {
                 try {
@@ -59,7 +59,7 @@ public class MessageTrace {
     public static void main(String[] args) throws InterruptedException {
         try (IGreenThrFactory thrFactory = new GreenThrFactory_single(2)) {
             final MessageEventBuffer messageBuf = new MessageEventBuffer(1000)
-                    .listenTo(thrFactory);
+                    .listenTo(thrFactory, true);
             messageBuf.setEventAction(rec -> {
                         if (rec instanceof MsgEventSent) {
                   /*
@@ -75,12 +75,16 @@ public class MessageTrace {
                         }
                     }
             );
-            thrFactory.newThread().execute(() -> someTask(1, thrFactory));
-            IActorRef<MyActor> ref = new MyActor().init(thrFactory);
-            ref.send(a -> log("  MyActor received message"));
+            thrFactory.newThread().execute(() -> {
+                someTask(1, thrFactory);
+                final String msg = "'Meeting 10 AM'";
+                MessageRelay.logInfo("Message: " + msg);
+                new MyActor().init(thrFactory).send(a -> log(msg));
+            });
             thrFactory.await(60000L);
             log("\nDone running. Buffer dump:");
-            messageBuf.forEach(e -> System.out.println(e.info()));
+            for (IMsgEvent e : messageBuf.toArray())
+                log(e.info());
         }
     }
 

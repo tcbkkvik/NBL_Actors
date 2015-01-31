@@ -12,20 +12,18 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Message-trace query interface. (used with IMsgListenerFactory)
+ * Get message traces
  * <p>Date: 23.01.2015
  * </p>
  *
  * @author Tor C Bekkvik
  */
-public interface IMsgEventBuf {
-
-    void forEach(Consumer<? super IMsgEvent> action);
+public interface IMsgEventTracer {
 
     /**
      * Get message trace.
      *
-     * @param last Last message to be traced from.
+     * @param last message to trace from.
      * @return List of messages, found by backward tracing
      */
     default List<IMsgEvent> getMessageTrace(IMsgEvent last) {

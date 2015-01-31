@@ -30,9 +30,11 @@ public class MessageRelay implements IMessageRelay {
     private static final ThreadLocal<TContext> threadContext
             = ThreadLocal.withInitial(TContext::new);
     private final IMsgListenerFactory listenerFactory;
+    private volatile boolean isReduceLog;
+    private volatile boolean isDisableLog;
 
     /**
-     * @param factory Called once per real thread.
+     * @param factory Called once per thread.
      *                Enables parallel event logging.
      *                The factory should return either
      *                (i) a single synchronized listener instance, or
@@ -42,6 +44,27 @@ public class MessageRelay implements IMessageRelay {
      */
     public MessageRelay(IMsgListenerFactory factory) {
         listenerFactory = factory;
+    }
+
+    /**
+     * Reduce logging to help performance.
+     * <p>If true: avoids calling Throwable.getStackTrace() for messages
+     * where the user has supplied info via MessageRelay.logInfo().
+     * </p>
+     *
+     * @param isReduce true to reduce (default false)
+     */
+    public void setReduceLog(boolean isReduce) {
+        isReduceLog = isReduce;
+    }
+
+    /**
+     * Disable logging (Can be re-enabled again)
+     *
+     * @param isDisable true = disable, false = normal logging
+     */
+    public void setDisableLog(boolean isDisable) {
+        isDisableLog = isDisable;
     }
 
     /**
@@ -68,7 +91,7 @@ public class MessageRelay implements IMessageRelay {
         return threadContext.get();
     }
 
-    private StackTraceElement stackElement(int lev) {
+    private static StackTraceElement stackElement(int lev) {
         final String coreP = "flc.nbl_actors.core";
         int no = 0;
         Throwable ex = new Throwable();
@@ -93,19 +116,26 @@ public class MessageRelay implements IMessageRelay {
 
         @Override
         public Runnable apply(Runnable msg) {
+            if (isDisableLog)
+                return msg;
             TContext ctx = threadContext.get();
             IActorRef targetActor = null;
             if (msg instanceof ActorMessage) {
                 ActorMessage am = (ActorMessage) msg;
                 targetActor = am.ref;
             }
+            Supplier<String> info = ctx.getLogInfo();
+            StackTraceElement stackE = (isReduceLog && info != null)
+                    ? null
+                    : stackElement(5);
             final MsgEventSent sendEvent = new MsgEventSent(
-                    ctx.nextId(), ctx.getParentId(), ctx.getLogInfo(), stackElement(3), thread, targetActor);
+                    ctx.nextId(), ctx.getParentId(), info, stackE, thread, targetActor);
             ctx.sent(sendEvent);
-            listener.accept(sendEvent);
             return () -> {
-                listener.accept(threadContext.get().received(sendEvent, listener));
+                TContext ctx2 = threadContext.get();
+                ctx2.received(new MsgEventReceived(sendEvent, ctx2.thrNo), listener);
                 msg.run();
+                ctx2.reset();
             };
         }
     }
@@ -124,7 +154,7 @@ public class MessageRelay implements IMessageRelay {
     }
 
     public static void printMessageTrace() {
-        threadContext.get().printMessageTrace(System.err);
+        threadContext.get().printMessageTrace();
     }
 
     /**
@@ -134,21 +164,25 @@ public class MessageRelay implements IMessageRelay {
         private static AtomicInteger currThrNo = new AtomicInteger();
         private final int thrNo = currThrNo.incrementAndGet();
         private int msgNo; //starts at 1 (0 is undefined)
-        private MsgId parentId;
         private Supplier<String> logInfo;
         private Consumer<IMsgEvent> listener;
         private MsgEventReceived lastReceived;
-        private MsgEventSent lastSent;
 
-        private MsgEventReceived received(MsgEventSent s, Consumer<IMsgEvent> li) {
-            parentId = s.id;
+        private void received(MsgEventReceived rcv, Consumer<IMsgEvent> li) {
             listener = li;
-            return lastReceived = new MsgEventReceived(s, thrNo);
+            lastReceived = rcv;
+            li.accept(rcv);
+        }
+
+        private void reset() {
+            lastReceived = null;
+            listener = null;
         }
 
         private void sent(MsgEventSent rec) {
-            lastSent = rec;
             logInfo = null;
+            if (listener != null)
+                listener.accept(rec);
         }
 
         public void setLogInfo(Supplier<String> info) {
@@ -160,7 +194,7 @@ public class MessageRelay implements IMessageRelay {
         }
 
         public MsgId getParentId() {
-            return parentId;
+            return lastReceived == null ? null : lastReceived.id();
         }
 
         public Supplier<String> getLogInfo() {
@@ -169,10 +203,6 @@ public class MessageRelay implements IMessageRelay {
 
         public MsgEventReceived getLastReceived() {
             return lastReceived;
-        }
-
-        public MsgEventSent getLastSent() {
-            return lastSent;
         }
 
         /**
@@ -184,8 +214,8 @@ public class MessageRelay implements IMessageRelay {
          */
         public List<IMsgEvent> getMessageTrace() {
             List<IMsgEvent> list = new LinkedList<>();
-            if (lastReceived != null && listener instanceof IMsgEventBuf) {
-                ((IMsgEventBuf) listener)
+            if (lastReceived != null && listener instanceof IMsgEventTracer) {
+                ((IMsgEventTracer) listener)
                         .getMessageTrace(lastReceived.id(), list::add);
             }
             return list;
