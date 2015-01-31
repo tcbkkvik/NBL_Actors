@@ -127,7 +127,7 @@ public class MessageRelay implements IMessageRelay {
             Supplier<String> info = ctx.getLogInfo();
             StackTraceElement stackE = (isReduceLog && info != null)
                     ? null
-                    : stackElement(5);
+                    : stackElement(3);
             final MsgEventSent sendEvent = new MsgEventSent(
                     ctx.nextId(), ctx.getParentId(), info, stackE, thread, targetActor);
             ctx.sent(sendEvent);
