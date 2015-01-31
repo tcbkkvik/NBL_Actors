@@ -42,7 +42,7 @@ public class MessageEventBuffer
      * <p>({@code Data flow: IGreenThrFactory ==> MessageRelay ==> this})
      * </p>
      *
-     * @param threads thread-factory
+     * @param threads     thread-factory
      * @param isReduceLog true = reduce log (minimize internal per message stack-traces)
      * @return this
      */
@@ -52,8 +52,16 @@ public class MessageEventBuffer
         return this;
     }
 
-    public MessageEventBuffer listenTo(IGreenThrFactory threads)
-    {
+    /**
+     * Listen to messages from thread-factory.
+     * Equivalent to {@code listenTo(threads, false)}
+     * <p>({@code Data flow: IGreenThrFactory ==> MessageRelay ==> this})
+     * </p>
+     *
+     * @param threads thread-factory
+     * @return this
+     */
+    public MessageEventBuffer listenTo(IGreenThrFactory threads) {
         return listenTo(threads, false);
     }
 
@@ -69,7 +77,7 @@ public class MessageEventBuffer
     }
 
     /**
-     * Set max ring buffer size
+     * Set max buffer size
      *
      * @param maxSize Max #events stored in ring-buffer
      */
@@ -103,11 +111,10 @@ public class MessageEventBuffer
 
 
     /**
-     * Accept message event, send to attached consumer if any,
-     * <p>before adding event to buffer (synchronized).
-     * </p>
+     * Accept message event (synchronized).
      *
      * @param event message event
+     * @see #forkListener()
      */
     @Override
     public void accept(IMsgEvent event) {
@@ -128,6 +135,12 @@ public class MessageEventBuffer
         return this;
     }
 
+    /**
+     * Returns an array of all events in this buffer, in arrival order.
+     * (synchronized)
+     *
+     * @return event array
+     */
     public IMsgEvent[] toArray() {
         synchronized (lock) {
             return buffer.toArray(new IMsgEvent[buffer.size()]);
@@ -135,7 +148,8 @@ public class MessageEventBuffer
     }
 
     /**
-     * Perform given action on buffered elements
+     * Perform given action on buffered events.
+     * (synchronized)
      *
      * @param action Action performed for each element
      * @throws NullPointerException if the specified action is null
@@ -147,7 +161,8 @@ public class MessageEventBuffer
     }
 
     /**
-     * Retrieves, but does not remove, the last element (most recently added)
+     * Retrieves, but does not remove, the last element added.
+     * (synchronized)
      *
      * @return last event, or null if buffer is empty
      */
@@ -157,6 +172,13 @@ public class MessageEventBuffer
         }
     }
 
+    /**
+     * Get message trace, starting from given message Id.
+     * (synchronized)
+     *
+     * @param aId       message event Id to trace from.
+     * @param aConsumer event consumer
+     */
     @Override
     public void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer) {
         if (aId == null) return;

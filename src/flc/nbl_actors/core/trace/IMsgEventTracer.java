@@ -21,25 +21,31 @@ import java.util.function.Consumer;
 public interface IMsgEventTracer {
 
     /**
-     * Get message trace.
+     * Get message trace, starting from given message
      *
-     * @param last message to trace from.
-     * @return List of messages, found by backward tracing
+     * @param lastEvent message event to trace from.
+     * @return trace List
      */
-    default List<IMsgEvent> getMessageTrace(IMsgEvent last) {
-        return getMessageTrace(last == null ? null : last.id());
+    default List<IMsgEvent> getMessageTrace(IMsgEvent lastEvent) {
+        return getMessageTrace(lastEvent == null ? null : lastEvent.id());
     }
 
-    default List<IMsgEvent> getMessageTrace(MsgId aId) {
+    /**
+     * Get message trace, starting from given message Id.
+     *
+     * @param lastId message event Id to trace from.
+     * @return trace List
+     */
+    default List<IMsgEvent> getMessageTrace(MsgId lastId) {
         List<IMsgEvent> list = new LinkedList<>();
-        getMessageTrace(aId, list::add);
+        getMessageTrace(lastId, list::add);
         return list;
     }
 
     /**
-     * Get message trace.
+     * Get message trace, starting from given message Id.
      *
-     * @param aId       Id of message event to trace backward from
+     * @param aId       message event Id to trace from.
      * @param aConsumer event consumer
      */
     void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer);

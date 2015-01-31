@@ -68,16 +68,22 @@ public class MessageRelay implements IMessageRelay {
     }
 
     /**
-     * Set user-defined log info in a ThreadLocal variable (java.lang.ThreadLocal), to be
+     * Set log info in a ThreadLocal variable (java.lang.ThreadLocal), to be
      * attached to next message-send log event.
      * Useful for adding labels and state information to message-trace.
      *
-     * @param info extra log information
+     * @param info log information
      */
     public static void logInfo(Supplier<String> info) {
         threadContext.get().setLogInfo(info);
     }
 
+    /**
+     * Set log info. Calls logInfo(() -&gt; info)
+     * ({@link #logInfo(java.util.function.Supplier)})
+     *
+     * @param info log information
+     */
     public static void logInfo(String info) {
         logInfo(() -> info);
     }
@@ -145,14 +151,29 @@ public class MessageRelay implements IMessageRelay {
         return new Interceptor(ownerThread, listenerFactory.forkListener());
     }
 
+    /**
+     * Attempt to produce a message trace-back for this thread context.
+     * <p>(returns empty list if IMsgListenerFactory does not implement IMsgTrace)
+     * </p>
+     *
+     * @return message trace
+     */
     public static List<IMsgEvent> getMessageTrace() {
         return threadContext.get().getMessageTrace();
     }
 
+    /**
+     * Print message trace to given stream
+     *
+     * @param s stream
+     */
     public static void printMessageTrace(PrintStream s) {
         threadContext.get().printMessageTrace(s);
     }
 
+    /**
+     * Print message trace to System.err
+     */
     public static void printMessageTrace() {
         threadContext.get().printMessageTrace();
     }
@@ -185,22 +206,47 @@ public class MessageRelay implements IMessageRelay {
                 listener.accept(rec);
         }
 
+        /**
+         * Set log info
+         *
+         * @param info log info
+         */
         public void setLogInfo(Supplier<String> info) {
             logInfo = info;
         }
 
+        /**
+         * Get next unique message Id (with incremented message number)
+         *
+         * @return Id
+         */
         public MsgId nextId() {
             return new MsgId(thrNo, ++msgNo);
         }
 
+        /**
+         * Get parent Id (lastReceived.id())
+         *
+         * @return parent Id
+         */
         public MsgId getParentId() {
             return lastReceived == null ? null : lastReceived.id();
         }
 
+        /**
+         * Last set logInfo
+         *
+         * @return logInfo
+         */
         public Supplier<String> getLogInfo() {
             return logInfo;
         }
 
+        /**
+         * Last received message event
+         *
+         * @return last received
+         */
         public MsgEventReceived getLastReceived() {
             return lastReceived;
         }
@@ -221,11 +267,19 @@ public class MessageRelay implements IMessageRelay {
             return list;
         }
 
+        /**
+         * Print message trace to given stream
+         *
+         * @param s stream
+         */
         public void printMessageTrace(PrintStream s) {
             for (IMsgEvent event : getMessageTrace())
                 s.println("\t" + event);
         }
 
+        /**
+         * Print message trace to System.err
+         */
         public void printMessageTrace() {
             printMessageTrace(System.err);
         }
