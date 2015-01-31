@@ -5,22 +5,27 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package flc.nbl_actors.experimental.log;
-
-import java.util.function.Consumer;
+package flc.nbl_actors.core.trace;
 
 /**
- * Message listener factory
+ * Message event.
  * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik
  */
-public interface IMsgListenerFactory {
+public interface IMsgEvent {
     /**
-     * Fork a new event listener. Intended to be called once
-     * per parallel event producer.
+     * Unique message identifier
      *
-     * @return Event consumer
+     * @return id
      */
-    Consumer<IMsgEvent> forkListener();
+    MsgId id();
+
+    /**
+     * Minimal info; Complete in context with other logged events.
+     * Call toString() for more self-contained info.
+     *
+     * @return info
+     */
+    String info();
 }

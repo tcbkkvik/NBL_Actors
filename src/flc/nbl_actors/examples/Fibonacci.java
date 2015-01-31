@@ -8,7 +8,7 @@
 package flc.nbl_actors.examples;
 
 import flc.nbl_actors.core.*;
-import flc.nbl_actors.experimental.log.*;
+import flc.nbl_actors.core.trace.*;
 
 import java.math.BigInteger;
 import java.util.function.Function;

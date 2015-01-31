@@ -8,7 +8,7 @@
 package flc.nbl_actors.examples;
 
 import flc.nbl_actors.core.*;
-import flc.nbl_actors.experimental.log.*;
+import flc.nbl_actors.core.trace.*;
 
 /**
  * Example on using MessageRelay to generate a message trace.
