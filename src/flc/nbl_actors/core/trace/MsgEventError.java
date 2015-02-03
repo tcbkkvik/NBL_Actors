@@ -10,24 +10,21 @@ package flc.nbl_actors.core.trace;
 import flc.nbl_actors.core.*;
 
 /**
+ * Message event: Received messaged caused an exception
  * <p>Date: 02.02.2015
  * </p>
  *
  * @author Tor C Bekkvik
  */
 public class MsgEventError implements IMsgEvent {
-    final MsgEventReceived received;
-    final Exception exception;
-    final String shortTrace;
+    public final MsgEventReceived received;
+    public final Exception exception;
+    public final String shortTrace;
 
     public MsgEventError(MsgEventReceived received, Exception exception) {
         this.received = received;
         this.exception = exception;
         shortTrace = ThreadContext.shortTrace(exception);
-    }
-
-    public Exception getException() {
-        return exception;
     }
 
     @Override
