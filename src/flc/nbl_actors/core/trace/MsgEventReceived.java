@@ -8,7 +8,7 @@
 package flc.nbl_actors.core.trace;
 
 /**
- * Message event: Received
+ * Message event: Received (message.run() is being called)
  * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik

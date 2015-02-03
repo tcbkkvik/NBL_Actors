@@ -218,6 +218,7 @@ public class ActorTests {
      * Tests IGreenThrFactory.setEmptyListener via threads.close()
      *
      * @param threads Thread Factory
+     * @throws InterruptedException if the current thread is interrupted while waiting.
      */
     static void tst_FactoryEmptyListeners(IGreenThrFactory threads) throws InterruptedException {
         String text = "tst_FactoryEmptyListeners(" + className(threads) + ")";

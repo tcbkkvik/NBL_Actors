@@ -13,7 +13,7 @@ import flc.nbl_actors.core.IGreenThr;
 import java.util.function.Supplier;
 
 /**
- * Message event: Sent
+ * Message event: Sent (Added to receiving thread's message queue)
  * <p>Date 16.01.2015.</p>
  *
  * @author Tor C Bekkvik

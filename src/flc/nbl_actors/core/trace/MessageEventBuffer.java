@@ -89,12 +89,9 @@ public class MessageEventBuffer
 
     /**
      * Reduce logging (may help performance).
-     * <p>If true: avoids calling Throwable.getStackTrace() for messages
-     * with attached MessageRelay.logInfo().
-     * Usable after {@link #listenTo(flc.nbl_actors.core.IGreenThrFactory, boolean)}
-     * </p>
      *
-     * @param isReduce true to reduce (default is false)
+     * @param isReduce true to reduce
+     * @see MessageRelay#setReduceLog(boolean)
      */
     public void setReduceLog(boolean isReduce) {
         if (relay != null)
@@ -105,6 +102,7 @@ public class MessageEventBuffer
      * Disable or enable logging
      *
      * @param isDisabled true = disable, false = normal logging
+     * @see MessageRelay#setDisableLog(boolean)
      */
     public void setDisableLog(boolean isDisabled) {
         if (relay != null)

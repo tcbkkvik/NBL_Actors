@@ -59,7 +59,7 @@ public class MessageRelay implements IMessageRelay {
     }
 
     /**
-     * Disable logging (Can be re-enabled again)
+     * Disable or enable logging
      *
      * @param isDisable true = disable, false = normal logging
      */
