@@ -178,26 +178,26 @@ public class MessageEventBuffer
      * Get message trace, starting from given message Id.
      * (synchronized)
      *
-     * @param aId       message event Id to trace from.
-     * @param aConsumer event consumer
+     * @param msgId    message event Id to trace from.
+     * @param consumer event consumer
      */
     @Override
-    public void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer) {
-        if (aId == null) return;
+    public void getMessageTrace(MsgId msgId, Consumer<? super IMsgEvent> consumer) {
+        if (msgId == null) return;
         synchronized (lock) {
             Iterator<IMsgEvent> it = buffer.descendingIterator();
             while (it.hasNext()) {
                 IMsgEvent elem = it.next();
-                if (!elem.id().equals(aId))
+                if (!elem.id().equals(msgId))
                     continue;
-                aConsumer.accept(elem);
-                aId = elem.parentId();
+                consumer.accept(elem);
+                msgId = elem.parentId();
             }
         }
     }
 
     /**
-     * Set output for {@link #logException(MsgId, Exception)}
+     * Set output for {@link IMsgEventTracer#onError(MsgId, RuntimeException)}
      * (default is System.err)
      *
      * @param aStream output
@@ -207,16 +207,17 @@ public class MessageEventBuffer
     }
 
     /**
-     * Write exception (stackTrace + messageTrace) to PrintStream
+     * Prints stackTrace, followed by messageTrace before rethrowing.
      *
-     * @param aId        Id of last message (for messageTrace)
-     * @param aException exception
+     * @param msgId Id of last message (for messageTrace)
+     * @param error exception
      */
     @Override
-    public void logException(MsgId aId, Exception aException) {
-        aException.printStackTrace(errorStream);
+    public void onError(MsgId msgId, RuntimeException error) {
+        error.printStackTrace(errorStream);
         errorStream.println("\tMessage trace:");
-        getMessageTrace(aId, ev -> errorStream.println("\t" + ev));
+        getMessageTrace(msgId, ev -> errorStream.println("\t" + ev));
         errorStream.flush();
+        throw error;
     }
 }

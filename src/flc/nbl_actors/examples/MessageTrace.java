@@ -11,7 +11,7 @@ import flc.nbl_actors.core.*;
 import flc.nbl_actors.core.trace.*;
 
 /**
- * Example on using MessageRelay to generate a message trace.
+ * Message tracing examples
  * <p>Date: 22.01.2015
  * </p>
  *
@@ -65,12 +65,21 @@ public class MessageTrace {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        try (IGreenThrFactory threads = new GreenThrFactory_single(2)) {
+        try (final IGreenThrFactory threads = new GreenThrFactory_single(2)) {
 
             //Initiate exception and message-tracing:
-            final MessageEventBuffer
-                    messageBuf = new MessageEventBuffer(200)
-                    .listenTo(threads);
+            final MessageEventBuffer messageBuf = new MessageEventBuffer(200) {
+                //Optional override: Customized runtime exception handling
+                @Override
+                public void onError(MsgId msgId, RuntimeException error) {
+                    try {
+                        super.onError(msgId, error);
+                    } catch (Exception e) {
+                        threads.shutdown();
+                    }
+                }
+            }.listenTo(threads);
+
             //Optional user-defined runtime event inspection:
             messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
 
@@ -80,12 +89,13 @@ public class MessageTrace {
 
             //Optional log info added to normal actor message (send):
             MessageRelay.logInfo("Actor send");
-            new MyActor().init(threads).send(a -> log("'Meeting 10 AM'"));
+            new MyActor().init(threads).send(a -> log("'Actor got message'"));
 
             threads.await(60000L);
-            log("\nDone running. Buffer dump:");
+            log("\nThreads done. Buffer dump:");
             for (IMsgEvent e : messageBuf.toArray())
                 log(e.info());
+            log("\nMain done");
         }
     }
 

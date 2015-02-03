@@ -143,10 +143,10 @@ public class MessageRelay implements IMessageRelay {
                 ctx2.received(rec, listener);
                 try {
                     msg.run();
-                } catch (Exception ex) {
+                } catch (RuntimeException ex) {
                     listener.accept(new MsgEventError(rec, ex));
                     if (listener instanceof IMsgEventTracer) {
-                        ((IMsgEventTracer) listener).logException(rec.id(), ex);
+                        ((IMsgEventTracer) listener).onError(rec.id(), ex);
                     }
                 } finally {
                     ctx2.reset();

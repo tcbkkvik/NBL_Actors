@@ -45,10 +45,16 @@ public interface IMsgEventTracer {
     /**
      * Get message trace, starting from given message Id.
      *
-     * @param aId       message event Id to trace from.
-     * @param aConsumer event consumer
+     * @param msgId    message event Id to trace from.
+     * @param consumer event consumer
      */
-    void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer);
+    void getMessageTrace(MsgId msgId, Consumer<? super IMsgEvent> consumer);
 
-    void logException(MsgId aId, Exception aException);
+    /**
+     * Handle error
+     *
+     * @param msgId Id of runnable message throwing exception
+     * @param error Runtime Exception (from Runnable.run())
+     */
+    void onError(MsgId msgId, RuntimeException error);
 }
