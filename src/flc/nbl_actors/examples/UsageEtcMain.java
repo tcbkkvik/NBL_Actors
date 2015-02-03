@@ -293,7 +293,47 @@ public class UsageEtcMain {
                 });
     }
 
+    private static long usedMemory() {
+        Runtime rt = Runtime.getRuntime();
+        return rt.totalMemory() - rt.freeMemory();
+    }
+
+    static void actorMemoryUse(int numActors, boolean isPureObj) {
+        class PureObj {
+//            int val;
+        }
+        class Act extends ActorBase<Act> {
+//            int val;
+        }
+        long mem1, mem2;
+        if (isPureObj) {
+            PureObj[] objArray = new PureObj[numActors];
+            mem1 = usedMemory();
+            for (int i = 0; i < objArray.length; i++) {
+                objArray[i] = new PureObj();
+            }
+            mem2 = usedMemory();
+        } else {
+            IGreenThr thr = Runnable::run;
+            IActorRef[] refArray = new IActorRef[numActors];
+            mem1 = usedMemory();
+            for (int ix = 0; ix < refArray.length; ix++) {
+                refArray[ix] = new Act().initThread(thr);
+            }
+            mem2 = usedMemory();
+        }
+        long dMem = mem2 - mem1;
+        log((isPureObj ? "#objects: " : "#actors: ") + numActors + "   kBytes: " + (dMem / 1024));
+        double byte_actor = (double) dMem / (double) numActors;
+        log("   bytes / instance:  " + byte_actor);
+		System.gc();
+    }
+
     public static void main(String[] args) throws InterruptedException {
+//        actorMemoryUse(100000, false);
+//        actorMemoryUse(100000, true);
+        actorMemoryUse(100000, false);
+        actorMemoryUse(100000, true);
         try (IGreenThrFactory f = new GreenThrFactory_single(2, false)) {
             listenToMultipleFactories(f);
             easy_to_learn(f);

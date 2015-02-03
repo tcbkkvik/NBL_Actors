@@ -49,4 +49,6 @@ public interface IMsgEventTracer {
      * @param aConsumer event consumer
      */
     void getMessageTrace(MsgId aId, Consumer<? super IMsgEvent> aConsumer);
+
+    void logException(MsgId aId, Exception aException);
 }

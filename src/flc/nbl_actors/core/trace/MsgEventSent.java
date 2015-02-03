@@ -61,6 +61,11 @@ public class MsgEventSent implements IMsgEvent {
         return id;
     }
 
+    @Override
+    public MsgId parentId() {
+        return idParent;
+    }
+
     private String targetInstanceString() {
         if (targetActor == null) return "";
 //        int hash = targetActor.hashCode(); to do?? add some type of (unique) instance ID?

@@ -69,16 +69,16 @@ public class TraceTests {
                     ++depth;
                 }
                 MessageRelay.TContext ctx = MessageRelay.getContext();
-                MsgEventSent sent;
+                MsgEventSent sent = null;
                 if (rec instanceof MsgEventSent) {
                     sent = (MsgEventSent) rec;
-                } else {
+                } else if (rec instanceof MsgEventReceived) {
                     sent = ((MsgEventReceived) rec).sent;
                     assertEquals("received id", rec.id(), ctx.getLastReceived().id());
                     List<IMsgEvent> trace2 = ctx.getMessageTrace();
                     assertEquals("getMessageTrace:list", trace, trace2);
                 }
-                if (sent.logInfo instanceof Info) {
+                if (sent != null && sent.logInfo instanceof Info) {
                     Info info = (Info) sent.logInfo;
                     assertEquals("getMessageTrace;depth", depth, info.depth);
                 }

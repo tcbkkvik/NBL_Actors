@@ -22,6 +22,13 @@ public interface IMsgEvent {
     MsgId id();
 
     /**
+     * Identify parent in message-tree (caused this message to be sent)
+     *
+     * @return parent Id
+     */
+    MsgId parentId();
+
+    /**
      * Minimal info; Complete in context with other logged events.
      * Call toString() for more self-contained info.
      *

@@ -139,9 +139,18 @@ public class MessageRelay implements IMessageRelay {
             ctx.sent(sendEvent);
             return () -> {
                 TContext ctx2 = threadContext.get();
-                ctx2.received(new MsgEventReceived(sendEvent, ctx2.thrNo), listener);
-                msg.run();
-                ctx2.reset();
+                MsgEventReceived rec = new MsgEventReceived(sendEvent, ctx2.thrNo);
+                ctx2.received(rec, listener);
+                try {
+                    msg.run();
+                } catch (Exception ex) {
+                    listener.accept(new MsgEventError(rec, ex));
+                    if (listener instanceof IMsgEventTracer) {
+                        ((IMsgEventTracer) listener).logException(rec.id(), ex);
+                    }
+                } finally {
+                    ctx2.reset();
+                }
             };
         }
     }

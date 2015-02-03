@@ -28,6 +28,11 @@ public class MsgEventReceived implements IMsgEvent {
     }
 
     @Override
+    public MsgId parentId() {
+        return sent.idParent;
+    }
+
+    @Override
     public String info() {
         return " run[" + sent.id + "] thread:" + toThrNo;
     }

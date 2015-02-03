@@ -19,10 +19,14 @@ of the actor-model. Redundant concepts and code has continuously been trimmed aw
     * Safe concurrent access: Actor state protected behind its actor-reference.
     * Non-blocking: Callbacks/lambda-continuations instead of blocking Futures.
     * Typed actors: Implies compile-time type checking and no explicit message types.
-    * Fork/Join: Non-blocking, fully general.
+    * Fork/Join: Non-blocking & heterogeneous (allows sub-tasks of different type)
+    * Debugging: Run single-threaded or use message tracing.
+    * Thread lifecycle; auto-closing when done: try(gThreads=..){  ...  }
     * Small but extensible:
+        Lightweight actors; < 50 bytes per actor.
+        Lightweight threads: Multiple green-threads per real thread
         No external libraries (except JUnit for tests),
-        no fancy processing (no reflection, proxy-generation, or byte-code manipulation),
+        no fancy processing (no reflection, Proxy/ByteCode generation or annotations),
         but with extensible interfaces (thread, thread-factory, actor-reference..).
         Additionally, you are free to combine it with any other actor libraries.
 
@@ -71,8 +75,9 @@ Here is a **mini-tutorial**, covering all essential concepts (working code):
 
     public static void main(String[] args) throws InterruptedException
     {
-        try (IGreenThrFactory f = new GreenThrFactory_single(2, false)) {
-            easy_to_learn(f);
+        IGreenThrFactory gThreads;
+        try (gThreads = new GreenThrFactory_single(2, false)) {
+            easy_to_learn(gThreads);
         }
     }
 ```
@@ -251,6 +256,37 @@ The final merged string should be equal to original:
             );
         }
         return fj.resultAsync();
+    }
+```
+
+### Message tracing
+Message tracing simplifies debugging of parallel message events.
+Send & Receive events can be buffered to be inspected later,
+for example by tracing message-chain leading up to an exception.
+
+Example, initiating message tracing:
+```java
+    try (IGreenThrFactory threads = new GreenThrFactory_single(2)) {
+
+        //Initiate exception and message-tracing:
+        final MessageEventBuffer
+                messageBuf = new MessageEventBuffer(200)
+                .listenTo(threads);
+        //Optional user-defined runtime event inspection:
+        messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
+
+        //Optional log info added to normal thread message (execute):
+        MessageRelay.logInfo("Thread execute");
+        threads.newThread().execute(() -> someTask(1, threads));
+
+        //Optional log info added to normal actor message (send):
+        MessageRelay.logInfo("Actor send");
+        new MyActor().init(threads).send(a -> log("'Meeting 10 AM'"));
+
+        threads.await(60000L);
+        log("\nDone running. Buffer dump:");
+        for (IMsgEvent e : messageBuf.toArray())
+            log(e.info());
     }
 ```
 

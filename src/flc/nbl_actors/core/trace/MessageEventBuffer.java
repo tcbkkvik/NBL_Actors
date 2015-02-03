@@ -10,6 +10,7 @@ package flc.nbl_actors.core.trace;
 
 import flc.nbl_actors.core.IGreenThrFactory;
 
+import java.io.PrintStream;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -29,6 +30,7 @@ public class MessageEventBuffer
     private volatile int maxBufSize;
     private volatile Consumer<? super IMsgEvent> eventAction;
     private volatile MessageRelay relay;
+    private volatile PrintStream errorStream = System.err;
 
     /**
      * @param maxSize Max #events stored in ring-buffer
@@ -189,12 +191,32 @@ public class MessageEventBuffer
                 if (!elem.id().equals(aId))
                     continue;
                 aConsumer.accept(elem);
-                MsgEventSent sent = elem instanceof MsgEventSent
-                        ? (MsgEventSent) elem
-                        : ((MsgEventReceived) elem).sent;
-                aId = sent.idParent;
+                aId = elem.parentId();
             }
         }
     }
 
+    /**
+     * Set output for {@link #logException(MsgId, Exception)}
+     * (default is System.err)
+     *
+     * @param aStream output
+     */
+    public void setErrorStream(PrintStream aStream) {
+        errorStream = Objects.requireNonNull(aStream);
+    }
+
+    /**
+     * Write exception (stackTrace + messageTrace) to PrintStream
+     *
+     * @param aId        Id of last message (for messageTrace)
+     * @param aException exception
+     */
+    @Override
+    public void logException(MsgId aId, Exception aException) {
+        aException.printStackTrace(errorStream);
+        errorStream.println("\tMessage trace:");
+        getMessageTrace(aId, ev -> errorStream.println("\t" + ev));
+        errorStream.flush();
+    }
 }
