@@ -261,10 +261,9 @@ The final merged string should be equal to original:
 
 ### Message tracing
 Message tracing simplifies debugging of parallel message events.
-Send & Receive events can be buffered to be inspected later,
-for example by tracing message-chain leading up to an exception.
+Using a ring-buffer, send & receive events can be kept for later inspection.
 
-Example, initiating message tracing:
+Example, logging to 'MessageEventBuffer':
 ```java
     try (IGreenThrFactory threads = new GreenThrFactory_single(2)) {
 
@@ -288,6 +287,16 @@ Example, initiating message tracing:
         for (IMsgEvent e : messageBuf.toArray())
             log(e.info());
     }
+```
+
+Example, tracing messages.
+The following console output shows a Message trace (from MessageEventBuffer);
+a chain of messages leading up to some event. Its like a Stack trace,
+but with added information:
+```
+	Message trace:
+	sent![3.3]3.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A3} thread:2  :RuntimeException((NOT a real exception) Demonstrating mixed Stack + Message trace) @MessageTrace.java:27
+	sent![3.1]2.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A2} thread:3
 ```
 
 ### Adding functionality
