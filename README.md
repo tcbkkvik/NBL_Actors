@@ -14,6 +14,18 @@ Taking full advantage of lambdas from beginning, this API is a compact yet flexi
 of the actor-model. Redundant concepts and code has continuously been trimmed away
 , intended to achieve a high "power-to-weight" ratio (Ie. few concepts, but simple to combine).
 
+<span style="background-color:grey">
+In this context, a message sent to an actor
+<span style="font-size:20px">a</span>, is a lambda expression:<br>
+<span style="font-size:40px;font-family:serif">
+    &lambda;a&rarr;f(a)
+</span><br>, where
+<span style="font-size:20px">f</span>
+ = message code (closure), called by the receiving actor's thread.
+ (see examples below)
+</span>
+
+
 ## Core features
     * Intuitive + lambdas: Few concepts but easy to combine, giving readable code.
     * Safe concurrent access: Actor state protected behind its actor-reference.
@@ -76,12 +88,14 @@ Here is a **mini-tutorial**, covering all essential concepts (working code):
     public static void main(String[] args) throws InterruptedException
     {
         IGreenThrFactory gThreads;
-        try (gThreads = new GreenThrFactory_single(2, false)) {
+        try (gThreads = new GreenThrFactory_single(2, false))
+        {
+            // Inside a try-with-resources block =>
+            // Will trigger automatic thread-shutdown when done..
             easy_to_learn(gThreads);
         }
     }
 ```
-..Ready to try?
 
 ## Usage patterns
 

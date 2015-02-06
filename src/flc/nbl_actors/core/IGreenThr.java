@@ -46,7 +46,7 @@ public interface IGreenThr extends Executor {
     default <T> void call(final Supplier<T> msg, final Consumer<T> callback) {
         IGreenThr caller = ThreadContext.get().getThread();
         if (caller == null)
-            throw new IllegalStateException("Method IGreenThr.call can only be called from another 'IGreenThr' thread");
+            throw new IllegalStateException("Method can only be called from another 'IGreenThr' thread");
         execute(() -> {
             final T value = msg.get();
             caller.execute(
@@ -65,7 +65,7 @@ public interface IGreenThr extends Executor {
     default <T> IASync<T> call(final Supplier<IASync<T>> msg) {
         IGreenThr caller = ThreadContext.get().getThread();
         if (caller == null)
-            throw new IllegalStateException("Method IGreenThr.call can only be called from another 'IGreenThr' thread");
+            throw new IllegalStateException("Method can only be called from another 'IGreenThr' thread");
         final ASyncValue<T> c = new ASyncValue<>();
         execute(() -> msg.get().result(
                 r -> caller.execute(

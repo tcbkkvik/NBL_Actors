@@ -41,9 +41,6 @@ public interface IActorRef<A> {
      * The message may be processed immediately, or scheduled to be
      * processed later. When processed, {@link Consumer#accept(Object)} is called
      * on the message, with the contained actor-object as argument.
-     * (Ie. any methods on the actor-object can be called from
-     * within the message lambda-block. Being typed implies
-     * compile-time type checking, and no need for explicit message types)
      * <p>
      * For thread-safety, avoid leaking shared-multiple-access, as the
      * message may be processed in another thread; Do not access mutable,
@@ -66,7 +63,7 @@ public interface IActorRef<A> {
     default <T> void call(final Function<A, T> msg, final Consumer<T> callback) {
         IGreenThr caller = ThreadContext.get().getThread();
         if (caller == null)
-            throw new IllegalStateException("Method IGreenThr.call can only be called from another 'IGreenThr' thread");
+            throw new IllegalStateException("Method can only be called from another 'IGreenThr' thread");
         send(a -> {
             final T value = msg.apply(a);
             caller.execute(
@@ -85,7 +82,7 @@ public interface IActorRef<A> {
     default <T> IASync<T> call(final Function<A, IASync<T>> msg) {
         IGreenThr caller = ThreadContext.get().getThread();
         if (caller == null)
-            throw new IllegalStateException("Method IGreenThr.call can only be called from another 'IGreenThr' thread");
+            throw new IllegalStateException("Method can only be called from another 'IGreenThr' thread");
         final ASyncValue<T> c = new ASyncValue<>();
         send(a -> msg.apply(a).result(
                 r -> caller.execute(
