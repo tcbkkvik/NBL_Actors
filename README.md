@@ -14,17 +14,10 @@ Taking full advantage of lambdas from beginning, this API is a compact yet flexi
 of the actor-model. Redundant concepts and code has continuously been trimmed away
 , intended to achieve a high "power-to-weight" ratio (Ie. few concepts, but simple to combine).
 
-<span style="background-color:grey">
-In this context, a message sent to an actor
-<span style="font-size:20px">a</span>, is a lambda expression:<br>
-<span style="font-size:40px;font-family:serif">
-    &lambda;a&rarr;f(a)
-</span><br>, where
-<span style="font-size:20px">f</span>
- = message code (closure), called by the receiving actor's thread.
- (see examples below)
-</span>
-
+In this context, a message sent to an actor **a**, is a lambda expression:
+##**&lambda;a&rarr;f(a)**
+, where **f** = message code (closure), called by the receiving actor's thread.
+(see examples below)
 
 ## Core features
     * Intuitive + lambdas: Few concepts but easy to combine, giving readable code.
