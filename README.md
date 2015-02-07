@@ -390,7 +390,7 @@ serializing `IActorRef.send(java.util.function.Consumer<A> msg)`)
 
 ## More documentation..
 * For more examples & code: check under src/...
-* Java docs; Download ZIP file; browse doc/index.html
+* Java docs; Download and unzip doc/javadoc.zip; See index.html
 
 
 ## Inspiration
