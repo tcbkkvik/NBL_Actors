@@ -34,6 +34,8 @@ public class MsgEventReceived implements IMsgEvent {
 
     @Override
     public String info() {
+        if (parentId() == null)
+            return toString();
         return " run[" + sent.id + "] thread:" + toThrNo;
     }
 

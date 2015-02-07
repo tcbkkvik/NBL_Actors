@@ -37,7 +37,7 @@ public class MessageTrace {
         MessageRelay.logInfo("send A" + depth);
         thr.execute(() -> {
             log("  got A" + depth);
-            if (depth < 3)
+            if (depth < 2)
                 someTask(depth + 1, gf);
             else
                 methodThrowsException(); //caught by MessageEventBuffer
@@ -85,11 +85,11 @@ public class MessageTrace {
 
             //Optional log info added to normal thread message (execute):
             MessageRelay.logInfo("Thread execute");
-            threads.newThread().execute(() -> someTask(1, threads));
+            threads.newThread().execute(() -> log("Thread got message"));
 
             //Optional log info added to normal actor message (send):
             MessageRelay.logInfo("Actor send");
-            new MyActor().init(threads).send(a -> log("'Actor got message'"));
+            new MyActor().init(threads).send(a -> someTask(1, threads));
 
             threads.await(60000L);
             log("\nThreads done. Buffer dump:");

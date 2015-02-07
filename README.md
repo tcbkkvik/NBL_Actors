@@ -281,29 +281,48 @@ Example, logging to 'MessageEventBuffer':
         //Optional user-defined runtime event inspection:
         messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
 
+        //Optional user-defined runtime event inspection:
+        messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
+
         //Optional log info added to normal thread message (execute):
         MessageRelay.logInfo("Thread execute");
-        threads.newThread().execute(() -> someTask(1, threads));
+        threads.newThread().execute(() -> log("Thread got message"));
 
         //Optional log info added to normal actor message (send):
         MessageRelay.logInfo("Actor send");
-        new MyActor().init(threads).send(a -> log("'Meeting 10 AM'"));
+        new MyActor().init(threads).send(a -> someTask(1, threads));
 
         threads.await(60000L);
-        log("\nDone running. Buffer dump:");
+        log("\nThreads done. Buffer dump:");
         for (IMsgEvent e : messageBuf.toArray())
             log(e.info());
     }
 ```
 
-Example, tracing messages.
-The following console output shows a Message trace (from MessageEventBuffer);
-a chain of messages leading up to some event. Its like a Stack trace,
-but with added information:
+Example output, demonstrating mixed Stack + Message trace (backward chain):
 ```
+	..
+	at flc.nbl_actors.core.trace.MessageRelay$Interceptor$$Lambda$10.run(Unknown Source)
+	at flc.nbl_actors.core.GreenThr_single$1.run(GreenThr_single.java:76)
 	Message trace:
-	sent![3.3]3.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A3} thread:2  :RuntimeException((NOT a real exception) Demonstrating mixed Stack + Message trace) @MessageTrace.java:27
-	sent![3.1]2.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A2} thread:3
+	sent![2.1]3.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A2} thread:3  :RuntimeException((NOT a real exception) Demonstrating mixed Stack + Message trace) @MessageTrace.java:27
+	sent![3.1]1.2 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A1} thread:2
+```
+
+Example output, dumping event sequence from ring-buffer:
+```
+    Threads done. Buffer dump:
+    sent![1.1]null at flc.nbl_actors.examples.MessageTrace.main(MessageTrace.java:88) {Thread execute} thread:2
+    sent![1.2]null at flc.nbl_actors.examples.MessageTrace.main(MessageTrace.java:92):MyActor {Actor send} thread:3
+    sent[3.1]1.2 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A1}
+     run[3.1] thread:2
+    sent[3.2]1.2 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:46) {send B1}
+    sent[2.1]3.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:38) {send A2}
+    sent[2.2]3.1 at flc.nbl_actors.examples.MessageTrace.someTask(MessageTrace.java:46) {send B2}
+     run[3.2] thread:2
+     run[2.1] thread:3
+     run[2.1] thread:3  :RuntimeException((NOT a real exception) Demonstrating mixed Stack + Message trace) @MessageTrace.java:27
+     run[2.2] thread:3
 ```
 
 ### Adding functionality
