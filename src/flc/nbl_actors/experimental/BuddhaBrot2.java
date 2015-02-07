@@ -19,6 +19,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
+import flc.nbl_actors.core.*;
+
 /**
  * Date: 14.02.14
  *
@@ -40,6 +42,7 @@ public class BuddhaBrot2 {
     float factorBlue;
     MyRender frame;
     GIF2 gifWriter;
+    private final Object lock = new Object();
 
     public BuddhaBrot2(int pixels) throws InterruptedException {
         px = py = pixels;
@@ -50,7 +53,7 @@ public class BuddhaBrot2 {
         frame = new MyRender(image, pixels);
     }
 
-    public void mainBuddhaLoop(float increm) {
+    public void mainBuddhaLoop(float increm) throws InterruptedException {
 //            float k = increm * 8000 / 4 * px / 800f;
         float k = increm * px * 2.8f;
         float kk = k * k;
@@ -60,6 +63,7 @@ public class BuddhaBrot2 {
         long t = System.currentTimeMillis();
         long t2 = t;
         int count = 0;
+        PathActorSet actors = new PathActorSet(2);
         for (float Cr = -2; Cr < 2; Cr += increm) {
             if (++count % 10 == 0) t2 = System.currentTimeMillis();
             if (t2 - t > 10000) {
@@ -67,9 +71,17 @@ public class BuddhaBrot2 {
                 log("  " + progress);
                 t = t2;
             }
-            for (float Ci = -2; Ci < 2; Ci += increm)
-                pathFrom(Cr, Ci);
+            final boolean isSerial = true;
+            //noinspection ConstantConditions
+            if (isSerial)
+                for (float Ci = -2; Ci < 2; Ci += increm) {
+                    pathFrom(Cr, Ci);
+                }
+            else
+                actors.send(Cr, increm);
+            //:Added threads => not much faster. Cause: Swing image processing?
         }
+        actors.await(0);
     }
 
     /**
@@ -131,7 +143,7 @@ public class BuddhaBrot2 {
                 if (n < maxGreen)
                     addPixels(n, px, py, path, pxGreen);
                 addPixels(n, px, py, path, pxBlue);
-                drawPath(n);
+                drawPath(n, path);
                 break;
             }
         }
@@ -140,7 +152,7 @@ public class BuddhaBrot2 {
     private long time;
 
     @SuppressWarnings("SuspiciousNameCombination")
-    private void drawPath(int n) {
+    private void drawPath(int n, float[][] path) {
         for (int i = 0; i < n; i++) {
             int x = (int) ((path[0][i] + 2) * px / 4);
             int y = (int) ((path[1][i] + 2) * py / 4);
@@ -266,6 +278,63 @@ public class BuddhaBrot2 {
         }
     }
 
+    private class PathActor extends ActorBase<PathActor> {
+
+        final float[][] _path = path;//new float[2][maxBlue];
+
+        void pathLoop(float Cr, float inc) {
+            for (float Ci = -2; Ci < 2; Ci += inc) {
+                pathFrom(Cr, Ci);
+            }
+        }
+
+        void pathFrom(float Cr, float Ci) {
+            float Zr = 0, Zi = 0;
+            for (int n = 0; n < maxBlue; n++) {
+                float tmp = calcImaginary(Zr, Zi, Ci);
+                _path[0][n] = Zr = calcReal(Zr, Zi, Cr);
+                _path[1][n] = Zi = tmp;
+                if (Zr * Zr + Zi * Zi > 4)
+                    synchronized (lock)
+                    {
+                        if (n < maxRed)
+                            addPixels(n, px, py, _path, pxRed);
+                        if (n < maxGreen)
+                            addPixels(n, px, py, _path, pxGreen);
+                        addPixels(n, px, py, _path, pxBlue);
+                        drawPath(n, _path);
+                        break;
+                    }
+            }
+        }
+    }
+
+    private class PathActorSet {
+        final IGreenThrFactory thrFactory;
+        final IActorRef[] refs;
+        int index;
+
+        public PathActorSet(int noRealThreads) {
+            thrFactory = new GreenThrFactory_single(noRealThreads);
+//            thrFactory = new GreenThr_zero();//for testing
+            refs = new IActorRef[noRealThreads];
+            for (int i = 0; i < noRealThreads; ++i) {
+                refs[i] = new PathActor().init(thrFactory);
+            }
+        }
+
+        void send(float Cr, float inc) {
+            @SuppressWarnings("unchecked")
+            IActorRef<PathActor> act = refs[index];
+            act.send(a -> a.pathLoop(Cr, inc));
+            index = (index + 1) % refs.length;
+        }
+
+        void
+        await(long millis) throws InterruptedException {
+            thrFactory.await(millis);
+        }
+    }
 
     static void log(Object obj) {
         System.out.println(obj);
@@ -278,7 +347,6 @@ public class BuddhaBrot2 {
         File f = new File(filePre + ".png");
         log("Generating BuddhaBrot to file: " + f.getAbsolutePath() + " ..");
         long t = System.currentTimeMillis();
-        //todo Do in parallel using green-threads/actors?
         BuddhaBrot2 buddhaBrot = new BuddhaBrot2(pixels);
 //        buddhaBrot.gifWriter = new GIF2(200, new File(filePre + ".gif"));
         buddhaBrot.mainBuddhaLoop(increment);
