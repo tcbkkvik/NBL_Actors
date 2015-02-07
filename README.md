@@ -16,7 +16,7 @@ of the actor-model. Redundant concepts and code has continuously been trimmed aw
 
 In this context, a message sent to an actor **a**, is a lambda expression:
 ##**&lambda;a&rarr;f(a)**
-, where **f** = message code (closure), called by the receiving actor's thread.
+, where **f** is a void function (closure) on **a**, to be called from receiving actor's thread.
 (see examples below)
 
 ## Core features
