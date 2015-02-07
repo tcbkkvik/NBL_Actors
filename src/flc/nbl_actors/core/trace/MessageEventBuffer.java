@@ -10,7 +10,7 @@ package flc.nbl_actors.core.trace;
 
 import flc.nbl_actors.core.IGreenThrFactory;
 
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -212,10 +212,12 @@ public class MessageEventBuffer
      */
     @Override
     public void onError(MsgId msgId, RuntimeException error) {
-        error.printStackTrace(errorStream);
-        errorStream.println("\tMessage trace:");
-        getMessageTrace(msgId, ev -> errorStream.println("\t" + ev));
-        errorStream.flush();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final PrintStream errOut = new PrintStream(bos);
+        error.printStackTrace(errOut);
+        errOut.println("\tMessage trace:");
+        getMessageTrace(msgId, ev -> errOut.println("\t" + ev));
+        errorStream.append(bos.toString()).flush();
         throw error;
     }
 }

@@ -49,6 +49,7 @@ public class MessageTrace {
     static class MyActor extends ActorBase<MyActor> {
     }
 
+    @SuppressWarnings({"UnusedParameters", "StatementWithEmptyBody"})
     private static void eventInspect(MessageEventBuffer messageBuf, IMsgEvent event) {
         if (event instanceof MsgEventSent) {
                   /*
@@ -59,9 +60,10 @@ public class MessageTrace {
                     (ii) records are buffered anyway, and can be
                          inspected later.
                     */
-            log("Message trace:");
-            messageBuf.getMessageTrace(event.id(), ev -> log("   * " + ev));
+//            log("Message trace:");
+//            messageBuf.getMessageTrace(event.id(), ev -> log("   * " + ev));
         }
+        log("\t\tevent: " + event.info());
     }
 
     public static void main(String[] args) throws InterruptedException {
