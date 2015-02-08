@@ -281,9 +281,6 @@ Example, logging to 'MessageEventBuffer':
         //Optional user-defined runtime event inspection:
         messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
 
-        //Optional user-defined runtime event inspection:
-        messageBuf.setEventAction(event -> eventInspect(messageBuf, event));
-
         //Optional log info added to normal thread message (execute):
         MessageRelay.logInfo("Thread execute");
         threads.newThread().execute(() -> log("Thread got message"));
