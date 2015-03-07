@@ -23,7 +23,7 @@ public class ASyncValue<T> implements IASync<T>, Consumer<T> {
     private volatile T value;
 
     /**
-     * Initiates with a value
+     * With initial value; null is allowed (isSet==false)
      *
      * @param value initial value
      */
@@ -55,9 +55,8 @@ public class ASyncValue<T> implements IASync<T>, Consumer<T> {
      */
     @Override
     public void accept(T data) {
-        isSet.set(true);
         value = data;
-        trigger();
+        accept();
     }
 
     /**
@@ -65,18 +64,19 @@ public class ASyncValue<T> implements IASync<T>, Consumer<T> {
      */
     public void accept() {
         isSet.set(true);
-        trigger();
+        if (cons != null)
+            cons.accept(value);
     }
 
     @Override
-    public void result(Consumer<T> consumer) {
-        cons = consumer;
-        trigger();
-    }
-
-    private void trigger() {
-        if (isSet.get() && cons != null)
-            cons.accept(value);
+    public void result(final Consumer<T> consumer) {
+        if (isSet.get())
+            consumer.accept(value);
+        else
+            cons = cons == null ? consumer : v -> {
+                cons.accept(v);
+                consumer.accept(v);
+            };
     }
 
 }
