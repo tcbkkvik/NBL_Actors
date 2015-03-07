@@ -156,7 +156,7 @@ public class UsageEtcMain {
 
     }
 
-    @SuppressWarnings("Convert2MethodRef")
+    @SuppressWarnings({"Convert2MethodRef", "UnusedDeclaration"})
     static class LeakedState extends ActorBase<LeakedState> {
         int value;
 
@@ -211,8 +211,8 @@ public class UsageEtcMain {
             }
         }
 
-        class MainActor {
-            int gotValue;
+        class MainActor extends ActorBase<MainActor> {
+            int gotValue, gotValue2;
 
             void someCalls(int correct, IActorRef<ValueActor> ref) {
                 ref
@@ -223,12 +223,23 @@ public class UsageEtcMain {
                             log("returned value: " + ret);
                             assert ret == correct;
                         });
+                //equivalent to call, using send:
+                ref.send(a -> a.getAsync()
+                        .result(ret -> self()
+                                .send(b -> {
+                                    gotValue2 = ret;
+                                    log("returned value2: " + ret);
+                                    assert ret == correct;
+                                })
+                        )
+                );
                 ref.send(valueActor
                         -> valueActor.async.accept(correct));
             }
         }
         IActorRef<ValueActor> valRef = new ActorRef<>(factory, new ValueActor());
-        IActorRef<MainActor> mainRef = new ActorRef<>(factory, new MainActor());
+        IActorRef<MainActor> mainRef = new MainActor()
+                .init(factory);
         mainRef.send(a -> a.someCalls(31407, valRef));
         // Output:
         // correct value: 31407
