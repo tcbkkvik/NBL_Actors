@@ -80,8 +80,7 @@ public class ThreadContext {
     }
 
     /**
-     * Get current thread. If current is null (not running inside a IGreenThr instance),
-     * a new GreenThread will be created using current IGreenThrFactory.
+     * Get current thread.
      *
      * @return current
      */

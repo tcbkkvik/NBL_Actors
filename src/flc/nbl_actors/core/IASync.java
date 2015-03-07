@@ -31,7 +31,7 @@ public interface IASync<T> {
     /**
      * Set future result handler
      *
-     * @param consumer result callback
+     * @param consumer called from caller or producer thread.
      */
     void result(Consumer<T> consumer);
 }
