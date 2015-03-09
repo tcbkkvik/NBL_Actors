@@ -8,7 +8,6 @@
 package flc.nbl_actors.core;
 
 
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -21,7 +20,7 @@ import java.util.function.Supplier;
  *
  * @author Tor C Bekkvik
  */
-public interface IGreenThr extends Executor {
+public interface IGreenThr {
 
     /**
      * Schedule a runnable message.
@@ -33,7 +32,6 @@ public interface IGreenThr extends Executor {
      * @param msg Runnable message
      * @throws NullPointerException if command is null
      */
-    @Override
     void execute(Runnable msg);
 
     /**
