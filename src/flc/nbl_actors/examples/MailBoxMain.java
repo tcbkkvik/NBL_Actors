@@ -30,8 +30,13 @@ public class MailBoxMain {
             } catch (InterruptedException ignore) {
             }
             Double val;
-            while ((val = queue.poll()) != null)
+            int no = 0;
+            while ((val = queue.poll()) != null) {
                 System.out.println(val);
+                ++no;
+            }
+            if (no > 0)
+                System.out.println("--");
         }
     }
 
@@ -39,23 +44,40 @@ public class MailBoxMain {
 
         try (IGreenThrFactory threads = new GreenThr_single(false)) {
             final IActorRef<Act> ref = new Act().init(threads);
-            final Deque<Double> queue = new LinkedBlockingDeque<>();
+            //Basic usage example
+            Consumer<Double> mailBox;
+            {
+                final Deque<Double> queue = new LinkedBlockingDeque<>();
+                mailBox = MailBox.create(ref, queue::addFirst, act -> act.receive(queue));
+                //queue::addFirst used to get stack/LIFO ordering
+            }
+            mailBox.accept(100.0);//first added
+            mailBox.accept(200.0);
+            //=> actor receive order if first added still in queue:  2.2,  1.1
 
-            Consumer<Double> msgBox = MailBox.create(ref, queue::add, a -> a.receive(queue));
-            Consumer<Double> msgBoxAddFirst = MailBox.create(ref, queue::addFirst, a -> a.receive(queue));
-            BiConsumer<Double, Boolean> priorityMailBox = MailBox.create(
-                    ref,
-                    (val, hiPri) -> {
-                        if (hiPri) queue.addFirst(val);
-                        else queue.add(val);
-                    },
-                    a -> a.receive(queue));
-            for (double val = 0; val < 10; val++)
-                msgBox.accept(val);
-            for (double val = 10; val < 20; val++)
-                msgBoxAddFirst.accept(val);
-            priorityMailBox.accept(3.2, false);
-            priorityMailBox.accept(1.5, true);
+            // More advanced usage:
+            // Combine multiple mailboxes & queues,
+            // Useful for priority handling etc.
+            Consumer<Double> mailBox1, mailBox2;
+            BiConsumer<Double, Boolean> mailBoxPri;
+            {
+                final Deque<Double> q1 = new LinkedBlockingDeque<>();
+                final Deque<Double> q2 = new LinkedBlockingDeque<>();
+                Consumer<Act> handler = act -> {
+                    act.receive(q1);
+                    act.receive(q2);
+                };
+                mailBox1 = MailBox.create(ref, q1::add, handler);
+                mailBox2 = MailBox.create(ref, q2::add, handler);
+                mailBoxPri = MailBox.create(ref, (v, pri) -> (pri ? q1 : q2).add(v), handler);
+            }
+            double val = 0;
+            for (int i = 0; i < 10; i++)
+                mailBox2.accept(val++);
+            for (int i = 0; i < 10; i++)
+                mailBox1.accept(val++);
+            mailBoxPri.accept(3.2, false);
+            mailBoxPri.accept(1.5, true);
         }
     }
 }

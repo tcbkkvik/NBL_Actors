@@ -13,22 +13,18 @@ import java.util.function.Consumer;
 
 /**
  * MailBox utility; Create explicit message queues for increased control.
- * <pre>Example:
+ * <pre>Basic example
  * {@code
- *   class Act extends ActorBase<Act> {
- *      void receive(Deque<Double> queue) {..}
- *   };
- *   final IActorRef<Act> ref = new Act().init(threads);
- *   final Deque<Double> queue = new LinkedBlockingDeque<>();
- *   BiConsumer<Double, Boolean> priorityMailBox = MailBox.create(
- *      ref,
- *      (val, hiPri) -> {
- *          if (hiPri) queue.addFirst(val);
- *          else queue.add(val);
- *      },
- *      a -> a.receive(queue));
- *   priorityMailBox.accept(3.2, false);
- *   priorityMailBox.accept(1.5, true);
+ *     final IActorRef<Act> ref = new Act().init(threads);
+ *     Consumer<Double> mailBox;
+ *     {
+ *         final Deque<Double> queue = new LinkedBlockingDeque<>();
+ *         mailBox = MailBox.create(ref, queue::addFirst, act -> act.receive(queue));
+ *         //queue::addFirst used to get stack/LIFO ordering
+ *     }
+ *     mailBox.accept(100.0);//first added
+ *     mailBox.accept(200.0);
+ *     //=> actor receive order if first added still in queue:  200.0, 100.0
  * }
  * </pre>
  * <p>Date: 07.03.2015
@@ -69,7 +65,7 @@ public class MailBox {
      * @param handler queue consumer
      * @param <A>     actor type
      * @param <T>     message type
-     * @param <U>     priority type (normally int)
+     * @param <U>     priority type
      * @return mail box
      */
     public static <A, T, U> BiConsumer<T, U> create(
