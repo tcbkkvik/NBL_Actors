@@ -20,20 +20,20 @@ In this context, a message sent to an actor **a**, is a lambda expression:
 (see examples below)
 
 ## Core features
-    * Intuitive + lambdas: Few concepts but easy to combine, giving readable code.
-    * Safe concurrent access: Actor state protected behind its actor-reference.
-    * Non-blocking: Callbacks/lambda-continuations instead of blocking Futures.
-    * Typed actors: Implies compile-time type checking and no explicit message types.
-    * Fork/Join: Non-blocking & heterogeneous (allows sub-tasks of different type)
-    * Debugging: Run single-threaded or use message tracing.
-    * Thread lifecycle; auto-closing when done: try(gThreads=..){  ...  }
-    * Small but extensible:
-        Lightweight actors; < 50 bytes per actor.
-        Lightweight threads: Multiple green-threads per real thread
-        No external libraries (except JUnit for tests),
-        no fancy processing (no reflection, Proxy/ByteCode generation or annotations),
-        but with extensible interfaces (thread, thread-factory, actor-reference..).
-        Additionally, you are free to combine it with any other actor libraries.
+* Intuitive + lambdas: Few concepts but easy to combine, giving readable code.
+* Safe concurrent access: Actor state protected behind its actor-reference.
+* Non-blocking: Callbacks/lambda-continuations instead of blocking Futures.
+* Typed actors: Implies compile-time type checking and no explicit message types.
+* Fork/Join: Non-blocking & heterogeneous (allows sub-tasks of different type)
+* Debugging: Run single-threaded or use message tracing.
+* Thread lifecycle; auto-closing when done: try(gThreads=..){  ...  }
+* Small but extensible:
+	- Lightweight actors; < 50 bytes per actor.
+	- Lightweight threads: Multiple green-threads per real thread
+	- No external library dependencies (except JUnit for tests)
+	- No fancy processing (no reflection, Proxy/ByteCode generation or annotations)
+	- Extensible interfaces (thread, thread-factory, actor-reference..)
+	- Combinable with any other libraries.
 
 ## Easy to use
 Basically, an object of a type 'A', wrapped inside an actor reference (`IActorRef<A>`),
@@ -320,6 +320,29 @@ Example output, dumping event sequence from ring-buffer:
      run[2.1] thread:3
      run[2.1] thread:3  :RuntimeException((NOT a real exception) Demonstrating mixed Stack + Message trace) @MessageTrace.java:27
      run[2.2] thread:3
+```
+
+### MailBox utility
+Use the MailBox utility for explicit queue-control and selective receive:
+
+```java
+	//Basic usage example
+	final IActorRef<Act> ref = new Act().init(threads);
+	Consumer<Double> mailBox;
+	{
+		//Explicit queue control:
+		final Deque<Double> queue = new LinkedBlockingDeque<>();
+		mailBox = MailBox.create(
+			ref,  //link from mailBox to your actor reference
+			queue::addFirst,  //add message to queue
+			act -> act.receive(queue)
+			  //Selective receive; actor decides 
+			  //in which order to consume from queue
+		);
+		//queue::addFirst used to get stack/LIFO ordering
+	}
+	mailBox.accept(100.0);//-> to queue; actor scheduled if needed
+	mailBox.accept(200.0);
 ```
 
 ### Adding functionality
