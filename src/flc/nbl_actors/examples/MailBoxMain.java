@@ -43,17 +43,23 @@ public class MailBoxMain {
     public static void main(String[] args) {
 
         try (IGreenThrFactory threads = new GreenThr_single(false)) {
-            final IActorRef<Act> ref = new Act().init(threads);
             //Basic usage example
+            final IActorRef<Act> ref = new Act().init(threads);
             Consumer<Double> mailBox;
             {
+                //explicit queue control:
                 final Deque<Double> queue = new LinkedBlockingDeque<>();
-                mailBox = MailBox.create(ref, queue::addFirst, act -> act.receive(queue));
+                mailBox = MailBox.create(
+                        ref,  //link from mailBox to your actor reference
+                        queue::addFirst,  //add message to queue
+                        act -> act.receive(queue)
+                        //selective receive; actor decides
+                        //in which order to consume from queue
+                );
                 //queue::addFirst used to get stack/LIFO ordering
             }
-            mailBox.accept(100.0);//first added
+            mailBox.accept(100.0); //-> to queue; actor scheduled if needed
             mailBox.accept(200.0);
-            //=> actor receive order if first added still in queue:  2.2,  1.1
 
             // More advanced usage:
             // Combine multiple mailboxes & queues,
